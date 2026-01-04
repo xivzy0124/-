@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xy.mapper.DailyVegetablePricesMapper" >
+  <resultMap id="BaseResultMap" type="com.xy.pojo.DailyVegetablePrices" >
+    <result column="dt" property="dt" jdbcType="DATE" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="price" property="price" jdbcType="DECIMAL" />
+  </resultMap>
+  <insert id="insert" parameterType="com.xy.pojo.DailyVegetablePrices" >
+    insert into daily_vegetable_prices (dt, name, price)
+    values (#{dt,jdbcType=DATE}, #{name,jdbcType=VARCHAR}, #{price,jdbcType=DECIMAL})
+  </insert>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select dt, name, price
+    from daily_vegetable_prices
+  </select>
+
+  <select id="selectByName" resultMap="BaseResultMap" >
+    select dt, price
+    from daily_vegetable_prices
+    <where>
+      <if test="name!=null">
+        name=#{name}
+      </if>
+    </where>
+    order by dt
+  </select>
+</mapper>

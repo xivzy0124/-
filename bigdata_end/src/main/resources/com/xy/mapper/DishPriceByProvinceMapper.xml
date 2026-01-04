@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xy.mapper.DishPriceByProvinceMapper" >
+    <resultMap id="BaseResultMap" type="com.xy.pojo.ProvinceDishPrice" >
+        <result column="province_name" property="provinceName" jdbcType="VARCHAR" />
+        <result column="dish_name" property="dishName" jdbcType="VARCHAR" />
+        <result column="year" property="year" jdbcType="INTEGER" />
+        <result column="max_price" property="maxPrice" jdbcType="DECIMAL" />
+        <result column="min_price" property="minPrice" jdbcType="DECIMAL" />
+        <result column="avg_price" property="avgPrice" jdbcType="DECIMAL" />
+    </resultMap>
+
+    <select id="getProvincePricesByDishAndYear" resultMap="BaseResultMap">
+        SELECT
+            SUBSTRING_INDEX(d.provincename, '省', 1) as province_name,
+            d.dish_name,
+            #{year} as year,
+        MAX(d.avg_max_price) as max_price,
+        MIN(d.avg_min_price) as min_price,
+        AVG(d.average_price) as avg_price
+        FROM
+            dish_price_statistics d
+        WHERE
+            d.dish_name = #{dishName}
+          AND d.year = #{year}
+          AND d.dish_name = #{dishName}
+        GROUP BY
+            province_name
+        ORDER BY
+            avg_price DESC
+    </select>
+</mapper> 

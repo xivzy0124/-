@@ -1,0 +1,15 @@
+# Mac 系统垃圾文件
+.DS_Store
+._*
+
+# IntelliJ IDEA 配置文件 (每个人配置不同，通常不需要上传)
+.idea/
+*.iml
+*.iws
+
+# Java 编译后的文件
+target/
+*.class
+
+# Maven 产生的临时文件
+release.properties

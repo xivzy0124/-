@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xy.mapper.PriceForecastMapper" >
+  <resultMap id="BaseResultMap" type="com.xy.pojo.PriceForecast" >
+    <result column="generate_date" property="generateDate" jdbcType="DATE" />
+    <result column="forecast_date" property="forecastDate" jdbcType="DATE" />
+    <result column="province" property="province" jdbcType="VARCHAR" />
+    <result column="product_name" property="productName" jdbcType="VARCHAR" />
+    <result column="predicted_price" property="predictedPrice" jdbcType="DECIMAL" />
+    <result column="algorithm" property="algorithm" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <!-- 查询所有价格预测信息 -->
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select generate_date, forecast_date, province, product_name, predicted_price, algorithm
+    from price_forecasts
+  </select>
+  
+  <!-- 根据省份和产品查询价格预测信息 -->
+  <select id="selectByProvinceAndProduct" resultMap="BaseResultMap" >
+    select generate_date, forecast_date, province, product_name, predicted_price, algorithm
+    from price_forecasts
+    where province = #{province} and product_name = #{productName}
+  </select>
+  
+  <!-- 根据预测目标日期范围查询价格预测信息 -->
+  <select id="selectByForecastDateRange" resultMap="BaseResultMap" >
+    select generate_date, forecast_date, province, product_name, predicted_price, algorithm
+    from price_forecasts
+    where forecast_date between #{startDate} and #{endDate}
+  </select>
+</mapper> 
