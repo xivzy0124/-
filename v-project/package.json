@@ -1,0 +1,40 @@
+{
+  "name": "v-project",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "format": "prettier --write --experimental-cli src/"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@vue/compiler-core": "^3.5.26",
+    "axios": "^1.13.2",
+    "chart.js": "^4.5.1",
+    "dompurify": "^3.3.1",
+    "echarts": "^6.0.0",
+    "element-plus": "^2.13.0",
+    "highlight.js": "^11.11.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
+    "jspdf-font": "^1.0.7",
+    "marked": "^17.0.1",
+    "mermaid": "^11.12.2",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.26",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.3",
+    "prettier": "3.7.4",
+    "vite": "^7.3.0",
+    "vite-plugin-vue-devtools": "^8.0.5"
+  }
+}
