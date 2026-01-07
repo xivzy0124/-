@@ -28,4 +28,26 @@
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT * FROM price_breakdown_by_province
     </select>
+
+    <resultMap id="YearlyTrendResultMap" type="org.v.end.model.dto.YearlyTrendDTO">
+        <result column="year" property="year"/>
+        <result column="averagePrice" property="averagePrice"/>
+        <result column="avgMaxPrice" property="avgMaxPrice"/>
+    </resultMap>
+
+    <select id="getYearlyTrendByProvince" resultMap="YearlyTrendResultMap">
+        SELECT
+            YEAR(dt) as year,
+            AVG(price) as averagePrice,
+            MAX(price) as avgMaxPrice
+        FROM daily_vegetable_prices
+        WHERE name = #{varietyName}
+        AND dt IN (
+            SELECT DISTINCT dt
+            FROM price_breakdown_by_province
+            WHERE provincename = #{provinceName}
+        )
+        GROUP BY YEAR(dt)
+        ORDER BY year
+    </select>
 </mapper>
