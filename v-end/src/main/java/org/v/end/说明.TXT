@@ -1,0 +1,16 @@
+com.v.end
+├── common          # 【通用支撑层】 全局共用的基础设施
+│   ├── config      # 配置类 (如: Swagger, CORS, MyBatisPlus配置)
+│   ├── constant    # 常量枚举 (如: UserTypeEnum, ResultCode)
+│   ├── exception   # 全局异常处理 (GlobalExceptionHandler)
+│   ├── result      # 统一响应结果 (Result, PageResult)
+│   └── utils       # 工具类 (如: JwtUtil, DateUtil)
+│
+├── controller      # 【表现层】 负责接收请求、参数校验、响应结果
+├── service         # 【业务层】 核心业务逻辑处理 (接口)
+│   └── impl        # 业务逻辑实现
+├── mapper          # 【持久层】 数据库交互接口 (DAO)
+└── model           # 【模型层】 数据对象定义
+    ├── entity      # 数据库实体 (与表结构一一对应)
+    ├── dto         # 数据传输对象 (前端 -> 后端)
+    └── vo          # 视图对象 (后端 -> 前端)
