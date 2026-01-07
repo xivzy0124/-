@@ -136,22 +136,12 @@ CREATE TABLE `statistics`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for vaegettable_type_2
+-- Table structure for vaegettable_type
 -- ----------------------------
-DROP TABLE IF EXISTS `vaegettable_type_2`;
-CREATE TABLE `vaegettable_type_2`  (
+DROP TABLE IF EXISTS `vaegettable_type`;
+CREATE TABLE `vaegettable_type`  (
   `one_level` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '大类',
   `two_level` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '小类',
   `varietyname` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '菜名'
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for vegetable_type
--- ----------------------------
-DROP TABLE IF EXISTS `vegetable_type`;
-CREATE TABLE `vegetable_type`  (
-  `one_level` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
-  `two_level` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-SET FOREIGN_KEY_CHECKS = 1;
