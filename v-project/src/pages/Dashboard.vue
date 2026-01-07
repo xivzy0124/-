@@ -25,7 +25,7 @@
         </div>
 
         <div class="card box-line">
-          <div class="card-header">全国{{ mapProductStore.currentProduct }}价格趋势</div>
+          <div class="card-header">{{ mapLocationStore.currentProvince }}{{ mapProductStore.currentProduct }}价格趋势</div>
           <div class="card-body">
             <TrendChart class="echarts-container" />
           </div>

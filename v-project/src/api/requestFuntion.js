@@ -2,6 +2,7 @@ import service from './request.js'
 /**
  * 获取7天天气预报
  * @param {String} location - 城市代码
+ * @returns {Promise}
  */
 export function get7DayWeather(location) {
   return service({
@@ -10,6 +11,45 @@ export function get7DayWeather(location) {
     params: { location },
   })
 }
+
+/**
+ * 根据省份和蔬菜名称获取年度价格趋势
+ * @param {String} provinceName - 省份名称
+ * @param {String} varietyName - 蔬菜名称
+ * @returns {Promise}
+ */
+export function getYearlyTrendByProvince(provinceName, varietyName) {
+  return service({
+    method: 'GET',
+    url: '/api/price/yearlyTrend',
+    params: {
+      provinceName,
+      varietyName,
+    },
+  })
+}
+
+
+/**
+ * 获取所有蔬菜类型
+ * @returns {Promise}
+ */
+export function getAllVaegettableTypes() {
+  return service({
+    method: 'GET',
+    url: '/api/vaegettableType/selectAll',
+  })
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -204,6 +244,14 @@ export function getQuarterDataByYear(data) {
   })
 }
 
+
+
+
+
+
+
+
+
 /**
  * 获取特定蔬菜的省级价格数据，带重试机制
  * @param {String} dishName 蔬菜名称
@@ -324,3 +372,6 @@ export function getNationalPredictedPrices(vegetable) {
     params: { vegetable },
   })
 }
+
+
+

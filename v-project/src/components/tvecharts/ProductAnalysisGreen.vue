@@ -36,8 +36,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, reactive } from 'vue'
 import * as echarts from 'echarts'
-// 接口引入保持不变，即使失败也会走假数据兜底
-import { selectDayByName, selectVolume } from '../../api/requestFuntion.js'
 import { mapProduct } from '../../stores/store.js'
 
 const mapProductStore = mapProduct()
@@ -226,59 +224,32 @@ const fetchData = async () => {
   isAllEmpty.value = false
 
   try {
-    const [priceResp, volResp] = await Promise.all([
-      selectDayByName({ name: productName }, '/user/day'),
-      selectVolume({ varietyname: productName }, '/user/selectVolume'),
-    ])
-
-    // --- 1. 价格数据处理 ---
     let priceX = []
     let priceY = []
 
-    // 如果接口成功且有数据
-    if (priceResp.data.code === '0' && priceResp.data.data?.length > 0) {
-      priceX = priceResp.data.data.map((item) => item.reporttime)
-      priceY = priceResp.data.data.map((item) => item.middleprice)
-    } else {
-      // 接口无数据 -> 随机生成一套假数据
-      // 随机选一种价格风格，让每次看起来不一样
-      const style = mockDataStyles[Math.floor(Math.random() * mockDataStyles.length)]
-      const mockData = generateRandomPrice(style.priceBase)
+    const style = mockDataStyles[Math.floor(Math.random() * mockDataStyles.length)]
+    const mockData = generateRandomPrice(style.priceBase)
 
-      priceX = mockData.map((item) => item.reporttime)
-      priceY = mockData.map((item) => item.middleprice)
-    }
+    priceX = mockData.map((item) => item.reporttime)
+    priceY = mockData.map((item) => item.middleprice)
 
     if (priceChart) {
       priceChart.setOption(getPriceOption(priceX, priceY), true)
     }
 
-    // --- 2. 销量数据处理 ---
     let chartData = []
-    if (volResp.data.code === '0' && volResp.data.data?.length > 0) {
-      chartData = volResp.data.data
-        .map((item) => ({
-          name: item.market || item.date || '未知',
-          value: parseFloat(item.volume),
-        }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 10)
-    } else {
-      // 接口无数据 -> 随机生成假数据
-      const mockData = generateRandomVolume()
-      chartData = mockData.map((item) => ({
-        name: item.market,
-        value: item.volume,
-      }))
-    }
+    const mockDataV = generateRandomVolume()
+    chartData = mockDataV.map((item) => ({
+      name: item.market,
+      value: item.volume,
+    }))
 
     if (rankChart) {
       rankChart.setOption(getRankOption(chartData), true)
     }
   } catch (error) {
-    console.error('API错误，使用全套假数据', error)
+    console.error('数据生成错误', error)
 
-    // 异常兜底：完全随机
     const style = mockDataStyles[Math.floor(Math.random() * mockDataStyles.length)]
     const mockP = generateRandomPrice(style.priceBase)
     priceChart?.setOption(

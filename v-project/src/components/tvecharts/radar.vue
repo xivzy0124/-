@@ -5,8 +5,6 @@
 <script setup>
 import * as echarts from 'echarts'
 import { onMounted, reactive, ref, watch } from 'vue'
-import { radar } from '/src/api/requestFuntion.js'
-import { ElMessage } from 'element-plus'
 import { mapLocation, mapProduct } from '/src/stores/store.js'
 
 const mapLocationStore = mapLocation()

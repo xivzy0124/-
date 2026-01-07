@@ -48,7 +48,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getAllVegetableTypes } from '../../api/requestFuntion.js'
+import { getAllVaegettableTypes } from '../../api/requestFuntion.js'
 import { mapProduct } from '../../stores/store.js'
 
 const emit = defineEmits(['product-change'])
@@ -60,10 +60,10 @@ const selectedProduct = ref(mapProductStore.currentProduct)
 // 1. 加载数据的逻辑
 const loadProductOptions = async () => {
   try {
-    const response = await getAllVegetableTypes()
-    if (response.data && response.data.data) {
+    const data = await getAllVaegettableTypes()
+    if (data) {
       const groupedData = {}
-      response.data.data.forEach((item) => {
+      data.forEach((item) => {
         if (!item.oneLevel) return
 
         if (!groupedData[item.oneLevel]) {

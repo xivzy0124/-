@@ -6,8 +6,8 @@ import { defineStore } from 'pinia'
 export const mapLocation = defineStore('mapLocationPinia', {
   state: () => {
     return {
-      currentProvince: '北京', // 省
-      currentCity: '北京',     // 市
+      currentProvince: '河南省', // 省
+      currentCity: '郑州市',     // 市
       currentDistrict: '',     // 区县 (默认为空)
     }
   },
@@ -32,8 +32,8 @@ export const mapLocation = defineStore('mapLocationPinia', {
 
     // 重置回默认状态
     resetLocation() {
-      this.currentProvince = '北京'
-      this.currentCity = '北京'
+      this.currentProvince = '河南省'
+      this.currentCity = '郑州市'
       this.currentDistrict = ''
     },
   },

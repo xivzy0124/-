@@ -159,8 +159,7 @@ const handleMapChange = async (regionName) => {
   console.log('选择的区域:', regionName)
 
   if (regionName === '全国' || regionName === '北京市') {
-    mapLocationStore.setCurrentProvince('全国')
-    mapLocationStore.setCurrentCity('北京市')
+    mapLocationStore.resetLocation()
     await fetchWeather('101010100')
     return
   }
