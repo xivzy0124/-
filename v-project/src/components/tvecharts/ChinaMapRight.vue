@@ -214,7 +214,7 @@ onMounted(() => {
 
 /* ==================== 
    输入框样式强力覆盖 
-   ==================== */
+   /* ==================== */
 :deep(.el-input__wrapper) {
   background-color: transparent !important;
   border: 1px solid rgba(66, 227, 164, 0.3) !important;
@@ -243,6 +243,19 @@ onMounted(() => {
   font-size: 14px;
   text-align: right;
   font-family: 'Microsoft YaHei', sans-serif;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 覆盖Element UI select的wrapper默认白色背景 */
+:deep(.el-select__wrapper) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 确保输入框容器也完全透明 */
+:deep(.el-input) {
+  background-color: transparent !important;
 }
 
 /* 占位符颜色 */

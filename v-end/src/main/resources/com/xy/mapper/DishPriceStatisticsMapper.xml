@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xy.mapper.DishPriceStatisticsMapper" >
+  <resultMap id="BaseResultMap" type="com.xy.pojo.DishPriceStatistics" >
+    <result column="year" property="year" jdbcType="INTEGER" />
+    <result column="quarter" property="quarter" jdbcType="INTEGER" />
+    <result column="dish_name" property="dishName" jdbcType="VARCHAR" />
+    <result column="avg_max_price" property="avgMaxPrice" jdbcType="DECIMAL" />
+    <result column="avg_min_price" property="avgMinPrice" jdbcType="DECIMAL" />
+    <result column="price_difference" property="priceDifference" jdbcType="DECIMAL" />
+    <result column="average_price" property="averagePrice" jdbcType="DECIMAL" />
+  </resultMap>
+  
+  <insert id="insert" parameterType="com.xy.pojo.DishPriceStatistics" >
+    insert into dish_price_statistics (year, quarter, dish_name, 
+      avg_max_price, avg_min_price, price_difference, 
+      average_price)
+    values (#{year,jdbcType=INTEGER}, #{quarter,jdbcType=INTEGER}, #{dishName,jdbcType=VARCHAR}, 
+      #{avgMaxPrice,jdbcType=DECIMAL}, #{avgMinPrice,jdbcType=DECIMAL}, #{priceDifference,jdbcType=DECIMAL}, 
+      #{averagePrice,jdbcType=DECIMAL})
+  </insert>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select year, quarter, dish_name, avg_max_price, avg_min_price, price_difference, 
+    average_price
+    from dish_price_statistics
+  </select>
+  <select id="selectByQuart" resultMap="BaseResultMap" >
+    select year, quarter,avg(average_price) as average_price,max(avg_max_price) as avg_max_price
+    from dish_price_statistics
+    <where>
+      <if test="name!=null">
+        dish_name = #{name}
+      </if>
+      <if test="start!=null and end!=null">
+        and year between #{start} and #{end}
+      </if>
+    </where>
+      group by year,quarter
+  </select>
+
+  <select id="selectByYear" resultMap="BaseResultMap" >
+    select year,avg(average_price) as average_price,max(avg_max_price) as avg_max_price
+    from dish_price_statistics
+    <where>
+      <if test="name!=null">
+        dish_name = #{name}
+      </if>
+      <if test="start!=null and end!=null">
+        and year between #{start} and #{end}
+      </if>
+    </where>
+    group by year
+  </select>
+</mapper>

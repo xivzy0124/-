@@ -1,8 +1,5 @@
 <template>
   <div class="warning-module">
-    <div class="module-title">
-      <span class="icon">⚠️</span> 预警提示
-    </div>
 
     <div class="alert-list">
       <div 

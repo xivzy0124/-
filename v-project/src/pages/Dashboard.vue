@@ -60,7 +60,7 @@
         </div>
 
         <div class="card box-cctv">
-          <div class="card-header">农业基地实时监控</div>
+          <div class="card-header">⚠️ 预警提示</div>
           <div class="card-body">
             
             <div class="warning-container">

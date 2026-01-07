@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xy.mapper.StatisticsMapper" >
+  <resultMap id="BaseResultMap" type="com.xy.pojo.Statistics" >
+    <result column="total" property="total" jdbcType="BIGINT" />
+    <result column="varietyname_ct" property="varietynameCt" jdbcType="BIGINT" />
+    <result column="provincename_ct" property="provincenameCt" jdbcType="BIGINT" />
+    <result column="areacode_ct" property="areacodeCt" jdbcType="BIGINT" />
+  </resultMap>
+  <insert id="insert" parameterType="com.xy.pojo.Statistics" >
+    insert into statistics (total, varietyname_ct, provincename_ct, 
+      areacode_ct)
+    values (#{total,jdbcType=BIGINT}, #{varietynameCt,jdbcType=BIGINT}, #{provincenameCt,jdbcType=BIGINT}, 
+      #{areacodeCt,jdbcType=BIGINT})
+  </insert>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select total, varietyname_ct, provincename_ct, areacode_ct
+    from statistics
+  </select>
+</mapper>

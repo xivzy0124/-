@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xy.mapper.ScatterDataMapper" >
+  <resultMap id="BaseResultMap" type="com.xy.pojo.ScatterData" >
+    <result column="provincename" property="provincename" jdbcType="VARCHAR" />
+    <result column="varietyname" property="varietyname" jdbcType="VARCHAR" />
+    <result column="marketname" property="marketname" jdbcType="VARCHAR" />
+    <result column="average_price" property="averagePrice" jdbcType="DECIMAL" />
+    <result column="price_variance" property="priceVariance" jdbcType="DECIMAL" />
+  </resultMap>
+  <insert id="insert" parameterType="com.xy.pojo.ScatterData" >
+    insert into scatter_data (provincename, varietyname, marketname, 
+      average_price, price_variance)
+    values (#{provincename,jdbcType=VARCHAR}, #{varietyname,jdbcType=VARCHAR}, #{marketname,jdbcType=VARCHAR}, 
+      #{averagePrice,jdbcType=DECIMAL}, #{priceVariance,jdbcType=DECIMAL})
+  </insert>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select provincename, varietyname, marketname, average_price, price_variance
+    from scatter_data
+  </select>
+
+  <select id="selectByProvince" resultMap="BaseResultMap" >
+    select provincename, varietyname, marketname, average_price, price_variance
+    from scatter_data
+    <where>
+      <if test="provincename !=null">
+        provincename = #{provincename}
+      </if>
+      <if test="greens !=null">
+        and varietyname = #{greens}
+      </if>
+    </where>
+  </select>
+
+  <select id="selectByProvinceAndVariety" resultMap="BaseResultMap" >
+    select provincename, marketname, varietyname, volume, price_variance, average_price
+    from scatter_data
+    <where>
+      <if test="provinceName!=null and provinceName!=''">
+        provincename = #{provinceName}
+      </if>
+      <if test="varietyName!=null and varietyName!=''">
+        and varietyname = #{varietyName}
+      </if>
+    </where>
+  </select>
+</mapper>

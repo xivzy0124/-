@@ -25,8 +25,8 @@
         </div>
 
         <div class="header-content">
-          <div class="panel-title" :title="mapCityStore.currentProvince">
-            {{ mapCityStore.currentProvince }}
+          <div class="panel-title" :title="displayCityName">
+            {{ displayCityName }}
           </div>
           <div class="sub-title">气象实时监测</div>
         </div>
@@ -103,6 +103,31 @@ const isDrillDown = computed(() => {
   return mapCityStore.currentProvince !== '北京' && mapCityStore.currentProvince !== '全国'
 })
 
+// 计算属性：显示正确的城市名称
+const displayCityName = computed(() => {
+  const currentProvince = mapCityStore.currentProvince
+  const currentCity = mapCityStore.currentCity
+
+  // 如果是全国，显示北京市
+  if (currentProvince === '全国' || currentProvince === '北京') {
+    return '北京市'
+  }
+
+  // 如果是省份级别
+  if (provinceCapitalMap[currentProvince]) {
+    const capitalCity = provinceCapitalMap[currentProvince].name
+    // 如果当前城市不等于省会城市，说明点击了具体城市，显示当前城市
+    if (currentCity !== capitalCity) {
+      return currentCity
+    }
+    // 否则显示省会城市
+    return capitalCity
+  }
+
+  // 如果是具体城市，显示城市名称
+  return currentCity
+})
+
 // --- 工具函数 ---
 
 // 获取天气图标
@@ -143,9 +168,14 @@ const handleMapChange = async (regionName) => {
 
   // 查找映射代码
   if (provinceCapitalMap[regionName]) {
+    // 点击的是省份，更新省份状态，城市显示省会
+    mapCityStore.setCurrentProvince(regionName)
+    mapCityStore.setCurrentCity(provinceCapitalMap[regionName].name)
     targetCode = provinceCapitalMap[regionName].code
     displayName = provinceCapitalMap[regionName].name
   } else if (cityCodeMap[regionName]) {
+    // 点击的是具体城市，更新城市状态
+    mapCityStore.setCurrentCity(regionName)
     targetCode = cityCodeMap[regionName]
   }
 
@@ -173,7 +203,10 @@ const handleBackToChina = async () => {
 // 4. 重置状态
 const resetToDefault = () => {
   loading.value = true
-  // 假设默认显示北京的天气
+  // 重置为全国状态
+  mapCityStore.setCurrentProvince('全国')
+  mapCityStore.setCurrentCity('北京市')
+  // 显示北京的天气
   fetchWeather('101010100')
 }
 
