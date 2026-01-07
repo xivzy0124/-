@@ -12,11 +12,11 @@
 import * as echarts from 'echarts'
 import { onMounted, watch, defineEmits, ref, onBeforeUnmount, computed } from 'vue'
 import { getQuarterDataByYear } from '../../api/requestFuntion.js'
-import { mapCity } from '../../stores/store.js'
+import { mapProduct } from '../../stores/store.js'
 
 const emit = defineEmits(['chartClick'])
 
-const store = mapCity()
+const store = mapProduct()
 
 const productName = computed(() => store.currentProduct)
 

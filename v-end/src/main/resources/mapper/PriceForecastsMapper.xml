@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.PriceForecastsMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.PriceForecasts">
+        <result column="generate_date" property="generateDate"/>
+        <result column="forecast_date" property="forecastDate"/>
+        <result column="province" property="province"/>
+        <result column="product_name" property="productName"/>
+        <result column="predicted_price" property="predictedPrice"/>
+        <result column="algorithm" property="algorithm"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.PriceForecasts">
+        INSERT INTO price_forecasts (generate_date, forecast_date, province, product_name, predicted_price, algorithm)
+        VALUES (#{generateDate}, #{forecastDate}, #{province}, #{productName}, #{predictedPrice}, #{algorithm})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.PriceForecasts">
+        SELECT * FROM price_forecasts
+        <where>
+            <if test="generateDate != null">AND generate_date = #{generateDate}</if>
+            <if test="forecastDate != null">AND forecast_date = #{forecastDate}</if>
+            <if test="province != null and province != ''">AND province = #{province}</if>
+            <if test="productName != null and productName != ''">AND product_name = #{productName}</if>
+            <if test="algorithm != null and algorithm != ''">AND algorithm = #{algorithm}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM price_forecasts
+    </select>
+</mapper>

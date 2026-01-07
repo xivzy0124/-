@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.StatisticsMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.Statistics">
+        <result column="total" property="total"/>
+        <result column="varietyname_ct" property="varietynameCt"/>
+        <result column="provincename_ct" property="provincenameCt"/>
+        <result column="areacode_ct" property="areacodeCt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.Statistics">
+        INSERT INTO statistics (total, varietyname_ct, provincename_ct, areacode_ct)
+        VALUES (#{total}, #{varietynameCt}, #{provincenameCt}, #{areacodeCt})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.Statistics">
+        SELECT * FROM statistics
+        <where>
+            <if test="total != null">AND total = #{total}</if>
+            <if test="varietynameCt != null">AND varietyname_ct = #{varietynameCt}</if>
+            <if test="provincenameCt != null">AND provincename_ct = #{provincenameCt}</if>
+            <if test="areacodeCt != null">AND areacode_ct = #{areacodeCt}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM statistics
+    </select>
+</mapper>

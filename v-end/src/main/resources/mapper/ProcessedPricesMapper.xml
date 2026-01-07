@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.ProcessedPricesMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.ProcessedPrices">
+        <result column="marketname" property="marketname"/>
+        <result column="provincename" property="provincename"/>
+        <result column="minimumprice" property="minimumprice"/>
+        <result column="middleprice" property="middleprice"/>
+        <result column="highestprice" property="highestprice"/>
+        <result column="tradingvolume" property="tradingvolume"/>
+        <result column="varietyname" property="varietyname"/>
+        <result column="reporttime" property="reporttime"/>
+        <result column="dt" property="dt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.ProcessedPrices">
+        INSERT INTO processed_prices (marketname, provincename, minimumprice, middleprice, highestprice, tradingvolume, varietyname, reporttime, dt)
+        VALUES (#{marketname}, #{provincename}, #{minimumprice}, #{middleprice}, #{highestprice}, #{tradingvolume}, #{varietyname}, #{reporttime}, #{dt})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.ProcessedPrices">
+        SELECT * FROM processed_prices
+        <where>
+            <if test="marketname != null and marketname != ''">AND marketname = #{marketname}</if>
+            <if test="provincename != null and provincename != ''">AND provincename = #{provincename}</if>
+            <if test="varietyname != null and varietyname != ''">AND varietyname = #{varietyname}</if>
+            <if test="reporttime != null and reporttime != ''">AND reporttime = #{reporttime}</if>
+            <if test="dt != null and dt != ''">AND dt = #{dt}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM processed_prices
+    </select>
+</mapper>

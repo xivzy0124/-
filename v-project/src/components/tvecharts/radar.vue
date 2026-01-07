@@ -7,18 +7,19 @@ import * as echarts from 'echarts'
 import { onMounted, reactive, ref, watch } from 'vue'
 import { radar } from '/src/api/requestFuntion.js'
 import { ElMessage } from 'element-plus'
-import { mapCity } from '/src/stores/store.js'
+import { mapLocation, mapProduct } from '/src/stores/store.js'
 
-const mapCityStore = mapCity()
+const mapLocationStore = mapLocation()
+const mapProductStore = mapProduct()
 let myChart = null
 
 const queryData = reactive({
-  province: '北京',
-  greens: '鸡蛋',
+  province: mapLocationStore.currentProvince,
+  greens: mapProductStore.currentProduct,
 })
 
 watch(
-  () => mapCityStore.currentProvince,
+  () => mapLocationStore.currentProvince,
   (newValue) => {
     queryData.province = newValue
     initData()
@@ -26,7 +27,7 @@ watch(
 )
 
 watch(
-  () => mapCityStore.currentProduct,
+  () => mapProductStore.currentProduct,
   (newValue) => {
     queryData.greens = newValue
     initData()
@@ -255,8 +256,8 @@ const initData = () => {
 }
 
 onMounted(() => {
-  queryData.province = mapCityStore.currentProvince || '安徽省'
-  queryData.greens = mapCityStore.currentProduct || '大葱'
+  queryData.province = mapLocationStore.currentProvince || '安徽省'
+  queryData.greens = mapProductStore.currentProduct || '大葱'
   initData()
   setTimeout(() => {
     getEcharts()

@@ -49,13 +49,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getAllVegetableTypes } from '../../api/requestFuntion.js'
-import { mapCity } from '../../stores/store.js'
+import { mapProduct } from '../../stores/store.js'
 
 const emit = defineEmits(['product-change'])
 
-const mapCityStore = mapCity()
+const mapProductStore = mapProduct()
 const productOptions = ref([])
-const selectedProduct = ref(mapCityStore.currentProduct)
+const selectedProduct = ref(mapProductStore.currentProduct)
 
 // 1. 加载数据的逻辑
 const loadProductOptions = async () => {
@@ -93,7 +93,7 @@ const loadProductOptions = async () => {
 // 2. 处理选中变化
 const handleProductChange = (val) => {
   selectedProduct.value = val
-  mapCityStore.setCurrentProduct(val)
+  mapProductStore.setCurrentProduct(val)
   emit('product-change', val)
 }
 

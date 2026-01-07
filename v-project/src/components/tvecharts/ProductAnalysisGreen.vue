@@ -38,9 +38,9 @@ import { ref, onMounted, onUnmounted, watch, reactive } from 'vue'
 import * as echarts from 'echarts'
 // 接口引入保持不变，即使失败也会走假数据兜底
 import { selectDayByName, selectVolume } from '../../api/requestFuntion.js'
-import { mapCity } from '../../stores/store.js'
+import { mapProduct } from '../../stores/store.js'
 
-const mapCityStore = mapCity()
+const mapProductStore = mapProduct()
 
 const priceChartRef = ref(null)
 const rankChartRef = ref(null)
@@ -220,7 +220,7 @@ const mockDataStyles = [
 // ================= 数据获取逻辑 =================
 
 const fetchData = async () => {
-  const productName = mapCityStore.currentProduct || '大白菜'
+  const productName = mapProductStore.currentProduct || '大白菜'
   currentProductName.value = productName
   loading.value = true
   isAllEmpty.value = false
@@ -318,7 +318,7 @@ const handleResize = () => {
 }
 
 watch(
-  () => mapCityStore.currentProduct,
+  () => mapProductStore.currentProduct,
   (newVal) => {
     if (newVal) fetchData()
   },

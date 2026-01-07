@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.CalendarDataMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.CalendarData">
+        <result column="provincename" property="provincename"/>
+        <result column="one_level" property="oneLevel"/>
+        <result column="two_level" property="twoLevel"/>
+        <result column="varietyname" property="varietyname"/>
+        <result column="total_export_volume" property="totalExportVolume"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.CalendarData">
+        INSERT INTO calendar_data (provincename, one_level, two_level, varietyname, total_export_volume)
+        VALUES (#{provincename}, #{oneLevel}, #{twoLevel}, #{varietyname}, #{totalExportVolume})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.CalendarData">
+        SELECT * FROM calendar_data
+        <where>
+            <if test="provincename != null and provincename != ''">AND provincename = #{provincename}</if>
+            <if test="oneLevel != null and oneLevel != ''">AND one_level = #{oneLevel}</if>
+            <if test="twoLevel != null and twoLevel != ''">AND two_level = #{twoLevel}</if>
+            <if test="varietyname != null and varietyname != ''">AND varietyname = #{varietyname}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM calendar_data
+    </select>
+</mapper>

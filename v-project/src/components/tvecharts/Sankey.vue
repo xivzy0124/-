@@ -8,15 +8,16 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { calendar } from '../../api/requestFuntion.js'
-import { mapCity } from '../../stores/store.js'
+import { mapLocation, mapProduct } from '../../stores/store.js'
 import { ElMessage } from 'element-plus'
 
 const sankeyChart = ref(null)
 let myChart = null
-const mapCityStore = mapCity()
+const mapLocationStore = mapLocation()
+const mapProductStore = mapProduct()
 
 const queryData = {
-  province: mapCityStore.currentProvince,
+  province: mapLocationStore.currentProvince,
 }
 
 // --- 1. 修改配色方案为科技霓虹色 ---
@@ -188,7 +189,7 @@ const transformToSankeyData = (rawData) => {
 
 const initData = async () => {
   console.log('=== 桑吉图初始化日志 ===')
-  queryData.province = mapCityStore.currentProvince
+  queryData.province = mapLocationStore.currentProvince
   console.log('1. 当前省份：', queryData.province)
 
   // 初始化mock数据（确保始终有数据显示）
@@ -290,7 +291,7 @@ const initChart = () => {
 
       if (isVegetable) {
         console.log('点击了品种节点:', params.name);
-        mapCityStore.setCurrentProduct(params.name)
+        mapProductStore.setCurrentProduct(params.name)
         ElMessage.success(`已选择品种: ${params.name}`)
       }
     }
@@ -306,7 +307,7 @@ const handleResize = () => {
 }
 
 watch(
-  () => mapCityStore.currentProvince,
+  () => mapLocationStore.currentProvince,
   () => {
     initData()
   },

@@ -18,14 +18,14 @@
     <main class="main-content">
       <aside class="column left-col">
         <div class="card box-gauge">
-          <div class="card-header">{{ mapCityStore.currentProvince }}农产品流向分析</div>
+          <div class="card-header">{{ mapLocationStore.currentProvince }}农产品流向分析</div>
           <div class="card-body">
             <Sankey />
           </div>
         </div>
 
         <div class="card box-line">
-          <div class="card-header">全国{{ mapCityStore.currentProduct }}价格趋势</div>
+          <div class="card-header">全国{{ mapProductStore.currentProduct }}价格趋势</div>
           <div class="card-body">
             <TrendChart class="echarts-container" />
           </div>
@@ -83,10 +83,11 @@ import Radar from '../components/tvecharts/radar.vue'
 import ProductAnalysisGreen from '../components/tvecharts/ProductAnalysisGreen.vue'
 import Sankey from '../components/tvecharts/Sankey.vue'
 import Warning from '../components/tvecharts/warning.vue'
-import { mapCity } from '../stores/store.js'
+import { mapLocation, mapProduct } from '../stores/store.js'
 
 const router = useRouter()
-const mapCityStore = mapCity()
+const mapLocationStore = mapLocation()
+const mapProductStore = mapProduct()
 const currentTime = ref('')
 let timer = null
 

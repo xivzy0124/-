@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.PriceBreakdownByProvinceMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.PriceBreakdownByProvince">
+        <result column="provincename" property="provincename"/>
+        <result column="varietyname" property="varietyname"/>
+        <result column="min_price" property="minPrice"/>
+        <result column="max_price" property="maxPrice"/>
+        <result column="avg_price" property="avgPrice"/>
+        <result column="tradingvolume" property="tradingvolume"/>
+        <result column="marketname" property="marketname"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.PriceBreakdownByProvince">
+        INSERT INTO price_breakdown_by_province (provincename, varietyname, min_price, max_price, avg_price, tradingvolume, marketname)
+        VALUES (#{provincename}, #{varietyname}, #{minPrice}, #{maxPrice}, #{avgPrice}, #{tradingvolume}, #{marketname})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.PriceBreakdownByProvince">
+        SELECT * FROM price_breakdown_by_province
+        <where>
+            <if test="provincename != null and provincename != ''">AND provincename = #{provincename}</if>
+            <if test="varietyname != null and varietyname != ''">AND varietyname = #{varietyname}</if>
+            <if test="marketname != null and marketname != ''">AND marketname = #{marketname}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM price_breakdown_by_province
+    </select>
+</mapper>

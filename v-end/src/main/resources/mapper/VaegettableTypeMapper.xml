@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.VaegettableTypeMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.VaegettableType">
+        <result column="one_level" property="oneLevel"/>
+        <result column="two_level" property="twoLevel"/>
+        <result column="varietyname" property="varietyname"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.VaegettableType">
+        INSERT INTO vaegettable_type (one_level, two_level, varietyname)
+        VALUES (#{oneLevel}, #{twoLevel}, #{varietyname})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.VaegettableType">
+        SELECT * FROM vaegettable_type
+        <where>
+            <if test="oneLevel != null and oneLevel != ''">AND one_level = #{oneLevel}</if>
+            <if test="twoLevel != null and twoLevel != ''">AND two_level = #{twoLevel}</if>
+            <if test="varietyname != null and varietyname != ''">AND varietyname = #{varietyname}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM vaegettable_type
+    </select>
+</mapper>

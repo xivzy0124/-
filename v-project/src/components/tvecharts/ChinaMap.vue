@@ -7,11 +7,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted, shallowRef } from 'vue'
 import * as echarts from 'echarts'
-import { mapCity } from '../../stores/store.js'
+import { mapLocation } from '../../stores/store.js'
 
-const mapCityStore = mapCity()
-
-// 定义向父组件发送事件
+const mapLocationStore = mapLocation()
 const emit = defineEmits(['region-change'])
 
 const props = defineProps({
@@ -21,89 +19,64 @@ const props = defineProps({
   },
 })
 
-// 省份映射表
-const provinceCodeMap = {
-  // 直辖市
-  北京市: '110000',
-  天津市: '120000',
-  上海市: '310000',
-  重庆市: '500000',
-
-  // 省
-  河北省: '130000',
-  山西省: '140000',
-  辽宁省: '210000',
-  吉林省: '220000',
-  黑龙江省: '230000',
-  江苏省: '320000',
-  浙江省: '330000',
-  安徽省: '340000',
-  福建省: '350000',
-  江西省: '360000',
-  山东省: '370000',
-  河南省: '410000',
-  湖北省: '420000',
-  湖南省: '430000',
-  广东省: '440000',
-  海南省: '460000',
-  四川省: '510000',
-  贵州省: '520000',
-  云南省: '530000',
-  陕西省: '610000',
-  甘肃省: '620000',
-  青海省: '630000',
-  台湾省: '710000',
-
-  // 自治区
-  内蒙古自治区: '150000',
-  广西壮族自治区: '450000',
-  西藏自治区: '540000',
-  宁夏回族自治区: '640000',
-  新疆维吾尔自治区: '650000',
-
-  // 特别行政区
-  香港特别行政区: '810000',
-  澳门特别行政区: '820000',
-}
-
 const chartRef = ref(null)
-// 使用 shallowRef 优化 ECharts 实例性能
 const chartInstance = shallowRef(null)
-const currentMap = ref('china')
+const currentMapName = ref('china')
+const currentAdcode = ref('100000')
+
+// 用于记录历史记录，实现返回上一级功能
+const historyStack = ref([])
 
 // 加载地图数据
 const loadMapData = async (mapName, adcode) => {
   chartInstance.value.showLoading({
-    text: '系统数据加载中...',
+    text: '数据加载中...',
     color: '#00f7ff',
     textColor: '#00f7ff',
     maskColor: 'rgba(10, 30, 60, 0.5)',
   })
 
   try {
-    const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`)
+    // 阿里云 DataV Atlas 数据源
+    const url = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`
+    const response = await fetch(url)
+    
+    // 如果是区县级，可能没有下一级地图，API会返回404或其他错误
+    if (!response.ok) {
+        throw new Error('No child map data')
+    }
+
     const geoJson = await response.json()
 
+    // 注册地图
     echarts.registerMap(mapName, geoJson)
-    currentMap.value = mapName
-
+    
+    // 更新当前状态
+    currentMapName.value = mapName
+    currentAdcode.value = adcode
+    
     chartInstance.value.hideLoading()
     setOptions(mapName)
+    
+    return true // 加载成功
   } catch (error) {
-    console.error('地图加载失败:', error)
+    console.warn('无法加载下一级地图（可能已到达最底层区县）:', error)
     chartInstance.value.hideLoading()
+    return false // 加载失败
   }
 }
 
-// 返回全国视图的方法（供父组件调用）
-const backToChina = async () => {
-  await loadMapData('china', '100000')
-  emit('region-change', '全国')
+// 返回上一级
+const backToPrevious = async () => {
+  if (historyStack.value.length === 0) return
+  
+  const prev = historyStack.value.pop()
+  await loadMapData(prev.mapName, prev.adcode)
+  emit('region-change', prev.mapName === 'china' ? '全国' : prev.mapName)
 }
 
-// 暴露方法给父组件
 defineExpose({
-  backToChina,
+  backToPrevious,
 })
 
 // 初始化图表
@@ -111,41 +84,56 @@ const initChart = async () => {
   if (!chartRef.value) return
   chartInstance.value = echarts.init(chartRef.value)
 
+  // 初始加载全国地图
   await loadMapData('china', '100000')
 
-  // --- 监听点击事件 ---
-  chartInstance.value.on('click', (params) => {
+  // --- 核心修改：通用点击下钻逻辑 ---
+  chartInstance.value.on('click', async (params) => {
     if (params.componentType === 'geo') {
-      // 1. 如果还在全国地图，并且点击了省份
-      if (currentMap.value === 'china') {
-        const adcode = provinceCodeMap[params.name]
-        if (adcode) {
-          // 下钻地图
-          loadMapData(params.name, adcode)
-          mapCityStore.setCurrentProvince(params.name)
-        }
-      }
-      // 2. 如果已经是省份地图，点击了具体的市
-      else {
-        // 尝试加载市级地图
-        // 假设市级adcode是在省级adcode基础上加上0101（注：实际项目可能需要更精确的市级adcode映射）
-        const provinceAdcode = provinceCodeMap[currentMap.value]
-        if (provinceAdcode) {
-          const cityAdcode = `${provinceAdcode}0101`
+      const clickedRegionName = params.name
+      
+      // 1. 获取当前已注册地图的 GeoJSON 数据
+      const currentGeoJson = echarts.getMap(currentMapName.value).geoJson
+      
+      // 2. 在 GeoJSON 的 features 中查找点击区域的详细信息（包含 adcode）
+      const feature = currentGeoJson.features.find(
+        (f) => f.properties.name === clickedRegionName
+      )
+      
+      if (feature && feature.properties.adcode) {
+        const nextAdcode = feature.properties.adcode
+        
+        // 3. 记录当前状态到历史栈（为了能返回）
+        historyStack.value.push({
+          mapName: currentMapName.value,
+          adcode: currentAdcode.value
+        })
 
-          loadMapData(params.name, cityAdcode)
-            .catch(() => {
-              console.log('没有市级地图数据，仅更新天气信息')
-            })
-            .finally(() => {
-              // 无论是否加载成功地图，都通知父组件更新数据
-              mapCityStore.setCurrentCity(params.name)
-              emit('region-change', params.name)
-            })
+        // 4. 尝试加载下一级地图
+        const success = await loadMapData(clickedRegionName, nextAdcode)
+
+        if (success) {
+           // A. 如果加载成功（说明有下一级地图，如省->市，或 市->区）
+           // 更新 Store 和通知父组件
+           if (clickedRegionName !== 'china') {
+             // 简单的逻辑：如果是省份层级，存省；如果是市层级，存市
+             // 这里统一发送当前选中的区域名称
+             mapLocationStore.setCurrentCity(clickedRegionName)
+           }
+           emit('region-change', clickedRegionName)
         } else {
-          // 如果找不到对应省代码，直接切换数据
-          mapCityStore.setCurrentCity(params.name)
-          emit('region-change', params.name)
+           // B. 如果加载失败（说明已经是区县级，或者API没有该区县的详细内部地图）
+           // 此时不切换地图视图，但仍然算作"选中"了该区域
+           
+           // 回退历史栈（因为没跳过去）
+           historyStack.value.pop() 
+           
+           // 仍然通知 Store 和父组件更新数据
+           console.log(`已到达最底层：${clickedRegionName}`)
+           mapLocationStore.setCurrentCity(clickedRegionName)
+           emit('region-change', clickedRegionName)
+           
+           // 可选：在这里做一个高亮效果提示用户选中了区县
         }
       }
     }
@@ -153,60 +141,65 @@ const initChart = async () => {
 }
 
 // 设置配置项
+// 设置配置项
 const setOptions = (mapName) => {
   if (!chartInstance.value) return
 
   const option = {
     backgroundColor: 'transparent',
     tooltip: {
+      // ... 保持原有 tooltip 配置
       trigger: 'item',
       backgroundColor: 'rgba(0,0,0,0.8)',
-      borderColor: '#45d0b2', // Tooltip 边框保持原色
+      borderColor: '#45d0b2',
       borderWidth: 1,
       textStyle: { color: '#fff' },
+      formatter: (params) => {
+          return `${params.name}`
+      }
     },
     geo: {
       map: mapName,
       roam: true,
       zoom: 1.2,
+      // --- 修改开始：关闭默认标签显示 ---
       label: {
-        show: mapName !== 'china',
-        color: '#7fffd4', // 字体颜色提亮
+        show: false, // 这里改为 false
+        color: '#7fffd4',
         fontSize: 10,
       },
+      // --- 修改结束 ---
+      
       itemStyle: {
-        // 区域填充渐变
         areaColor: {
           type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
+          x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
             { offset: 0, color: 'rgba(69, 208, 178, 0.1)' },
             { offset: 1, color: 'rgba(0, 20, 60, 0.9)' },
           ],
         },
-        // === 核心修改：高亮边界线 ===
-        borderColor: '#b9f8f4', // 接近白色的亮青色
-        borderWidth: 1.5, // 线条加粗
-        shadowColor: '#00ffff', // 荧光青色发光
-        shadowBlur: 10, // 发光晕染范围
-        shadowOffsetX: 0,
-        shadowOffsetY: 0,
+        borderColor: '#b9f8f4',
+        borderWidth: 1.5,
+        shadowColor: '#00ffff',
+        shadowBlur: 10,
       },
+      // 这里的 emphasis 设置保留，这样鼠标悬停时（高亮状态）仍然会显示名字
       emphasis: {
-        label: { show: true, color: '#fff' },
+        label: { show: true, color: '#fff' }, 
         itemStyle: {
-          areaColor: 'rgba(69, 208, 178, 0.8)', // 悬浮时填充变亮
-          borderColor: '#ffffff', // 悬浮时边框纯白
+          areaColor: 'rgba(69, 208, 178, 0.8)',
+          borderColor: '#ffffff',
           borderWidth: 2,
-          shadowBlur: 20, // 悬浮时发光更强
+          shadowBlur: 20,
           shadowColor: '#fff',
         },
       },
+      select: {
+        itemStyle: { areaColor: '#2B91B7' }
+      }
     },
-    series: [], // 如果有散点图等 series 数据可在此添加
+    series: [],
   }
   chartInstance.value.setOption(option, true)
 }

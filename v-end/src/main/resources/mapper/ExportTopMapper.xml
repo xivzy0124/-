@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.ExportTopMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.ExportTop">
+        <result column="varietyname" property="varietyname"/>
+        <result column="marketname" property="marketname"/>
+        <result column="trading_volume" property="tradingVolume"/>
+        <result column="minimum_price" property="minimumPrice"/>
+        <result column="middle_price" property="middlePrice"/>
+        <result column="highest_price" property="highestPrice"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.ExportTop">
+        INSERT INTO export_top (varietyname, marketname, trading_volume, minimum_price, middle_price, highest_price)
+        VALUES (#{varietyname}, #{marketname}, #{tradingVolume}, #{minimumPrice}, #{middlePrice}, #{highestPrice})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.ExportTop">
+        SELECT * FROM export_top
+        <where>
+            <if test="varietyname != null and varietyname != ''">AND varietyname = #{varietyname}</if>
+            <if test="marketname != null and marketname != ''">AND marketname = #{marketname}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM export_top
+    </select>
+</mapper>

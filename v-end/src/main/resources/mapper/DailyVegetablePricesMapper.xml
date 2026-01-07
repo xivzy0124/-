@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.DailyVegetablePricesMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.DailyVegetablePrices">
+        <result column="dt" property="dt"/>
+        <result column="week_of_month" property="weekOfMonth"/>
+        <result column="name" property="name"/>
+        <result column="price" property="price"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.DailyVegetablePrices">
+        INSERT INTO daily_vegetable_prices (dt, week_of_month, name, price)
+        VALUES (#{dt}, #{weekOfMonth}, #{name}, #{price})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.DailyVegetablePrices">
+        SELECT * FROM daily_vegetable_prices
+        <where>
+            <if test="dt != null">AND dt = #{dt}</if>
+            <if test="weekOfMonth != null">AND week_of_month = #{weekOfMonth}</if>
+            <if test="name != null and name != ''">AND name = #{name}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM daily_vegetable_prices
+    </select>
+</mapper>

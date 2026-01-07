@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.ScatterDataMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.ScatterData">
+        <result column="provincename" property="provincename"/>
+        <result column="marketname" property="marketname"/>
+        <result column="varietyname" property="varietyname"/>
+        <result column="volume" property="volume"/>
+        <result column="price_variance" property="priceVariance"/>
+        <result column="average_price" property="averagePrice"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.ScatterData">
+        INSERT INTO scatter_data (provincename, marketname, varietyname, volume, price_variance, average_price)
+        VALUES (#{provincename}, #{marketname}, #{varietyname}, #{volume}, #{priceVariance}, #{averagePrice})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.ScatterData">
+        SELECT * FROM scatter_data
+        <where>
+            <if test="provincename != null and provincename != ''">AND provincename = #{provincename}</if>
+            <if test="marketname != null and marketname != ''">AND marketname = #{marketname}</if>
+            <if test="varietyname != null and varietyname != ''">AND varietyname = #{varietyname}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM scatter_data
+    </select>
+</mapper>

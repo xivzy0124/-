@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.v.end.mapper.DishPriceStatisticsMapper">
+    <resultMap id="BaseResultMap" type="org.v.end.model.entity.DishPriceStatistics">
+        <result column="year" property="year"/>
+        <result column="quarter" property="quarter"/>
+        <result column="dish_name" property="dishName"/>
+        <result column="avg_max_price" property="avgMaxPrice"/>
+        <result column="avg_min_price" property="avgMinPrice"/>
+        <result column="price_difference" property="priceDifference"/>
+        <result column="average_price" property="averagePrice"/>
+        <result column="provincename" property="provincename"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="org.v.end.model.entity.DishPriceStatistics">
+        INSERT INTO dish_price_statistics (year, quarter, dish_name, avg_max_price, avg_min_price, price_difference, average_price, provincename)
+        VALUES (#{year}, #{quarter}, #{dishName}, #{avgMaxPrice}, #{avgMinPrice}, #{priceDifference}, #{averagePrice}, #{provincename})
+    </insert>
+
+    <select id="selectList" resultMap="BaseResultMap" parameterType="org.v.end.model.entity.DishPriceStatistics">
+        SELECT * FROM dish_price_statistics
+        <where>
+            <if test="year != null">AND year = #{year}</if>
+            <if test="quarter != null">AND quarter = #{quarter}</if>
+            <if test="dishName != null and dishName != ''">AND dish_name = #{dishName}</if>
+            <if test="provincename != null and provincename != ''">AND provincename = #{provincename}</if>
+        </where>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM dish_price_statistics
+    </select>
+</mapper>

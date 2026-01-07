@@ -1,4 +1,25 @@
 import service from './request.js'
+/**
+ * 获取7天天气预报
+ * @param {String} location - 城市代码
+ */
+export function get7DayWeather(location) {
+  return service({
+    method: 'GET',
+    url: '/api/weather/7day',
+    params: { location },
+  })
+}
+
+
+
+
+
+
+
+
+
+
 
 /**
  * 根据菜名查询每日价格
@@ -250,18 +271,6 @@ export function selectMarket(query, url) {
   })
 }
 
-/**
- * 获取7天天气预报
- * @param {String} location - 城市代码
- * @returns {Promise}
- */
-export function get7DayWeather(location) {
-  return service({
-    method: 'GET',
-    url: '/api/ai/7d',
-    params: { location },
-  })
-}
 
 //根据农产品查询当日交易额
 export function selectValue(query, url) {

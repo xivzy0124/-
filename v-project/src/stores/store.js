@@ -1,50 +1,62 @@
 import { defineStore } from 'pinia'
 
-//定义数据并且对外暴露
-// store就是定义共享状态的包装对象
-// 内部包含四个属性： id 唯一标识 state 完整类型推理，推荐使用箭头函数 存放的数据 getters 类似属性计算，存储放对数据
-// 操作的方法 actions 存储数据的复杂业务逻辑方法
-// 理解： store类似Java中的实体类， id就是类名， state 就是装数据值的属性 getters就是get方法，actions就是对数据操作的其他方法
-export const definedPerson = defineStore('jobberPinia', {
-  //        id: 'jobberPinia', //必须唯一
-  state: () => {
-    // state中用于定义数据
-    return {
-      //状态，也就是响应式数据
-      province: '安徽省',
-      vegetable: '大葱',
-    }
-  },
-})
-
-export const userVegetable = defineStore('userPinia', {
-  state: () => {
-    return { vegetable: '大葱' }
-  },
-})
-
-export const mapCity = defineStore('mapCityPinia', {
-  //当前选择的城市省份农作物
+// ==========================================
+// 1. 地理位置 Store (管理地图联动)
+// ==========================================
+export const mapLocation = defineStore('mapLocationPinia', {
   state: () => {
     return {
-      currentCity: '北京',
-      currentProvince: '北京',
-      currentProduct: '大白菜',
+      currentProvince: '北京', // 省
+      currentCity: '北京',     // 市
+      currentDistrict: '',     // 区县 (默认为空)
     }
   },
   actions: {
-    setCurrentCity(city) {
-      this.currentCity = city
-    },
+    // 设置省份 -> 自动重置市、区
     setCurrentProvince(province) {
       this.currentProvince = province
+      this.currentCity = ''
+      this.currentDistrict = ''
     },
+
+    // 设置城市 -> 自动重置区
+    setCurrentCity(city) {
+      this.currentCity = city
+      this.currentDistrict = ''
+    },
+
+    // 设置区县
+    setCurrentDistrict(district) {
+      this.currentDistrict = district
+    },
+
+    // 重置回默认状态
+    resetLocation() {
+      this.currentProvince = '北京'
+      this.currentCity = '北京'
+      this.currentDistrict = ''
+    },
+  },
+})
+
+// ==========================================
+// 2. 农作物/蔬菜 Store (管理业务筛选)
+// ==========================================
+export const mapProduct = defineStore('mapProductPinia', {
+  state: () => {
+    return {
+      currentProduct: '大白菜', // 当前选中的蔬菜
+    }
+  },
+  actions: {
+    // 设置农作物
     setCurrentProduct(product) {
       this.currentProduct = product
     },
-    resetCity() {
-      this.currentCity = '北京'
-      this.currentProvince = '北京'
-    },
+
+    // 重置农作物 (可选)
+    resetProduct() {
+      this.currentProduct = '大白菜'
+    }
   },
 })

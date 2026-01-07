@@ -80,7 +80,7 @@ import ChinaMap from './ChinaMap.vue'
 import ChinaMapRight from './ChinaMapRight.vue'
 
 import { get7DayWeather } from '../../api/requestFuntion.js'
-import { mapCity } from '../../stores/store.js'
+import { mapLocation } from '../../stores/store.js'
 import provinceCapitalMap from '../../assets/json/provinceCapitalMap.json'
 import cityCodeMap from '../../assets/json/cityCodeMap.json'
 import weatherIconMap from '../../assets/json/weatherIconMap.json'
@@ -92,7 +92,7 @@ const props = defineProps({
 
 // 引用与状态
 const chinaMapRef = ref(null)
-const mapCityStore = mapCity()
+const mapLocationStore = mapLocation()
 
 // 天气相关状态
 const weatherForecast = ref([])
@@ -100,16 +100,16 @@ const loading = ref(false)
 
 // 计算属性：判断是否处于下钻状态（非北京/非默认状态）
 const isDrillDown = computed(() => {
-  return mapCityStore.currentProvince !== '北京' && mapCityStore.currentProvince !== '全国'
+  return mapLocationStore.currentProvince !== '北京' && mapLocationStore.currentProvince !== '全国'
 })
 
 // 计算属性：显示正确的城市名称
 const displayCityName = computed(() => {
-  const currentProvince = mapCityStore.currentProvince
-  const currentCity = mapCityStore.currentCity
+  const currentProvince = mapLocationStore.currentProvince
+  const currentCity = mapLocationStore.currentCity
 
   // 如果是全国，显示北京市
-  if (currentProvince === '全国' || currentProvince === '北京') {
+  if (currentProvince === '全国' || currentProvince === '北京市') {
     return '北京市'
   }
 
@@ -152,14 +152,16 @@ const handleProductChange = (category) => {
 const handleMapChange = async (regionName) => {
   console.log('=== 开发者日志 - 切换区域 ===')
   console.log('当前 store 状态:', {
-    省份: mapCityStore.currentProvince,
-    城市: mapCityStore.currentCity,
-    蔬菜: mapCityStore.currentProduct,
+    省份: mapLocationStore.currentProvince,
+    城市: mapLocationStore.currentCity,
+    蔬菜: mapLocationStore.currentProduct,
   })
   console.log('选择的区域:', regionName)
 
-  if (regionName === '北京' || regionName === '全国') {
-    resetToDefault()
+  if (regionName === '全国' || regionName === '北京市') {
+    mapLocationStore.setCurrentProvince('全国')
+    mapLocationStore.setCurrentCity('北京市')
+    await fetchWeather('101010100')
     return
   }
 
@@ -169,13 +171,13 @@ const handleMapChange = async (regionName) => {
   // 查找映射代码
   if (provinceCapitalMap[regionName]) {
     // 点击的是省份，更新省份状态，城市显示省会
-    mapCityStore.setCurrentProvince(regionName)
-    mapCityStore.setCurrentCity(provinceCapitalMap[regionName].name)
+    mapLocationStore.setCurrentProvince(regionName)
+    mapLocationStore.setCurrentCity(provinceCapitalMap[regionName].name)
     targetCode = provinceCapitalMap[regionName].code
     displayName = provinceCapitalMap[regionName].name
   } else if (cityCodeMap[regionName]) {
     // 点击的是具体城市，更新城市状态
-    mapCityStore.setCurrentCity(regionName)
+    mapLocationStore.setCurrentCity(regionName)
     targetCode = cityCodeMap[regionName]
   }
 
@@ -183,9 +185,9 @@ const handleMapChange = async (regionName) => {
   if (targetCode) {
     loading.value = true
     console.log('更新后的 store 状态:', {
-      省份: mapCityStore.currentProvince,
-      城市: mapCityStore.currentCity,
-      蔬菜: mapCityStore.currentProduct,
+      省份: mapLocationStore.currentProvince,
+      城市: mapLocationStore.currentCity,
+      蔬菜: mapLocationStore.currentProduct,
     })
     console.log('天气代码:', targetCode)
     await fetchWeather(targetCode)
@@ -195,28 +197,13 @@ const handleMapChange = async (regionName) => {
 // 3. 处理返回按钮点击
 const handleBackToChina = async () => {
   // 调用地图子组件的方法返回上一级
-  await chinaMapRef.value?.backToChina()
-  // 逻辑上重置为默认状态
-  resetToDefault()
+  await chinaMapRef.value?.backToPrevious()
 }
 
-// 4. 重置状态
-const resetToDefault = () => {
-  loading.value = true
-  // 重置为全国状态
-  mapCityStore.setCurrentProvince('全国')
-  mapCityStore.setCurrentCity('北京市')
-  // 显示北京的天气
-  fetchWeather('101010100')
-}
-
-// 5. 获取天气数据
+// 4. 获取天气数据
 const fetchWeather = async (code) => {
   try {
-    const res = await get7DayWeather(code)
-    if (res.data && res.data.code === '200') {
-      weatherForecast.value = res.data.daily
-    }
+    weatherForecast.value = await get7DayWeather(code)
   } catch (e) {
     console.error('天气获取失败', e)
   } finally {
