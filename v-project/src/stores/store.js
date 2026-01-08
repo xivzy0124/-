@@ -60,3 +60,44 @@ export const mapProduct = defineStore('mapProductPinia', {
     }
   },
 })
+
+// ==========================================
+// 3. 价格预测数据缓存 Store (管理预测数据)
+// ==========================================
+export const pricePredictionCache = defineStore('pricePredictionCachePinia', {
+  state: () => {
+    return {
+      cache: {}, // 缓存数据，key格式: "省-市-区-蔬菜名"
+    }
+  },
+  actions: {
+    // 生成缓存key
+    generateCacheKey(province, city, district, productName) {
+      return `${province}-${city}-${district}-${productName}`
+    },
+
+    // 获取缓存数据
+    getCache(province, city, district, productName) {
+      const key = this.generateCacheKey(province, city, district, productName)
+      return this.cache[key] || null
+    },
+
+    // 设置缓存数据
+    setCache(province, city, district, productName, data) {
+      const key = this.generateCacheKey(province, city, district, productName)
+      this.cache[key] = data
+    },
+
+    // 清除指定缓存
+    clearCache(province, city, district, productName) {
+      const key = this.generateCacheKey(province, city, district, productName)
+      delete this.cache[key]
+    },
+
+    // 清除所有缓存
+    clearAllCache() {
+      this.cache = {}
+    }
+  },
+  persist: true // 启用持久化存储
+})

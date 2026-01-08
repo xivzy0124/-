@@ -192,65 +192,85 @@ const initData = async () => {
   queryData.province = mapLocationStore.currentProvince
   console.log('1. 当前省份：', queryData.province)
 
-  // 初始化mock数据（确保始终有数据显示）
-  // 稍微增加一些mock数据以展示效果
-  const baseMockData = [
-    { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '蔬菜类监测点', varietyname: '大白菜 (Core)', totalExportVolume: 1500 },
-    { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '蔬菜类监测点', varietyname: '萝卜 (Node-A)', totalExportVolume: 800 },
-    { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '蔬菜类监测点', varietyname: '辣椒 (Node-B)', totalExportVolume: 1200 },
-    { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '水果类监测点', varietyname: '苹果 (Core)', totalExportVolume: 1400 },
-    { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '水果类监测点', varietyname: '梨 (Node-C)', totalExportVolume: 600 },
-    { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '谷物类战略储备', varietyname: '小麦 (Main)', totalExportVolume: 2000 },
-    { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '谷物类战略储备', varietyname: '玉米 (Main)', totalExportVolume: 2500 },
-     { oneLevel: '外部协同节点', twoLevel: '谷物类战略储备', varietyname: '大豆 (Import)', totalExportVolume: 1800 },
+  const mockDataGroups = [
+    [
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '蔬菜类监测点', varietyname: '大白菜', totalExportVolume: 1500 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '蔬菜类监测点', varietyname: '萝卜', totalExportVolume: 800 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '蔬菜类监测点', varietyname: '辣椒', totalExportVolume: 1200 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '水果类监测点', varietyname: '苹果', totalExportVolume: 1400 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '水果类监测点', varietyname: '梨', totalExportVolume: 600 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '谷物类战略储备', varietyname: '小麦', totalExportVolume: 2000 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '谷物类战略储备', varietyname: '玉米', totalExportVolume: 2500 },
+      { oneLevel: '外部协同节点', twoLevel: '谷物类战略储备', varietyname: '大豆', totalExportVolume: 1800 },
+    ],
+    [
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '叶菜类监测点', varietyname: '菠菜', totalExportVolume: 950 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '叶菜类监测点', varietyname: '生菜', totalExportVolume: 1100 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '根茎类监测点', varietyname: '土豆', totalExportVolume: 2200 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '根茎类监测点', varietyname: '胡萝卜', totalExportVolume: 1300 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '柑橘类监测点', varietyname: '橘子', totalExportVolume: 1700 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '柑橘类监测点', varietyname: '橙子', totalExportVolume: 1600 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '豆类战略储备', varietyname: '绿豆', totalExportVolume: 900 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '豆类战略储备', varietyname: '红豆', totalExportVolume: 850 },
+    ],
+    [
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '茄果类监测点', varietyname: '茄子', totalExportVolume: 1050 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '茄果类监测点', varietyname: '西红柿', totalExportVolume: 1900 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '瓜类监测点', varietyname: '黄瓜', totalExportVolume: 2100 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '瓜类监测点', varietyname: '南瓜', totalExportVolume: 700 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '仁果类监测点', varietyname: '香蕉', totalExportVolume: 2300 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '仁果类监测点', varietyname: '葡萄', totalExportVolume: 1450 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '粮油类战略储备', varietyname: '花生', totalExportVolume: 1200 },
+      { oneLevel: `${queryData.province}农产数据中心`, twoLevel: '粮油类战略储备', varietyname: '芝麻', totalExportVolume: 650 },
+    ]
   ]
 
-  let finalData = baseMockData
-  let dataSource = 'mock数据'
+  let finalData = null
+  let dataSource = ''
 
-  // 尝试获取真实数据，但即使失败也不影响显示
   try {
-    // 模拟API延迟，让效果更明显
-    // await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('2. 开始请求API...')
     const resp = await calendar(queryData, '/user/calendar')
-    console.log('2. API返回：', resp)
+    console.log('3. API返回：', resp)
 
-    if (resp.data.code == '0' && resp.data.data && resp.data.data.length > 0) {
-      finalData = resp.data.data
+    if (resp && resp.length > 0) {
+      finalData = resp
       dataSource = '真实数据'
-      console.log('3. 成功获取真实数据：', finalData.length, '条')
+      console.log('4. 成功获取真实数据：', finalData.length, '条')
     } else {
-      console.log('3. API返回空数据，继续使用mock数据')
+      console.log('4. API返回空数据，将使用随机mock数据')
     }
   } catch (apiError) {
-    console.log('3. API请求失败，继续使用mock数据：', apiError.message)
+    console.log('4. API请求失败，将使用随机mock数据，错误：', apiError.message)
   }
 
-  // 转换数据为桑吉图格式
+  if (!finalData) {
+    finalData = mockDataGroups[Math.floor(Math.random() * mockDataGroups.length)]
+    dataSource = `mock数据组${mockDataGroups.indexOf(finalData) + 1}`
+    console.log('5. 使用随机mock数据：', dataSource)
+  }
+
   const sankeyData = transformToSankeyData(finalData)
-  console.log('4. 数据转换完成：', {
+  console.log('6. 数据转换完成：', {
     节点数: sankeyData.nodes.length,
     连接线数: sankeyData.links.length,
     数据源: dataSource,
   })
 
-  // 更新图表配置
   option.series[0].data = sankeyData.nodes
   option.series[0].links = sankeyData.links
 
-  // 确保图表实例存在
   if (!myChart) {
-    console.log('5. 图表实例不存在，重新初始化')
+    console.log('7. 图表实例不存在，重新初始化')
     initChart()
   }
 
-  // 设置图表数据
   if (myChart) {
-    console.log('6. 设置图表数据...')
+    console.log('8. 设置图表数据...')
     myChart.setOption(option, true)
-    console.log('✅ 7. 桑吉图显示成功！')
+    console.log('✅ 9. 桑吉图显示成功！')
   } else {
-    console.error('❌ 7. 图表实例创建失败！')
+    console.error('❌ 9. 图表实例创建失败！')
   }
 }
 

@@ -36,6 +36,29 @@
 
     <div class="divider-line"></div>
 
+    <div class="price-ranking-section">
+      <div class="section-title">未来5天价格预测</div>
+      <div class="ranking-list">
+        <div
+          v-for="(item, index) in provincePriceRanking"
+          :key="item.day"
+          class="ranking-item"
+        >
+          <div class="day-label">{{ item.day }}</div>
+          <div class="price-info">
+            <span class="price-value">{{ item.price }}</span>
+            <span class="price-unit">元/斤</span>
+          </div>
+          <div class="probability-badge">
+            <span class="probability-value">{{ (item.probability * 100).toFixed(0) }}%</span>
+            <span class="probability-label">概率</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider-line"></div>
+
     <div class="weather-monitor">
       <slot name="content"></slot>
     </div>
@@ -47,15 +70,78 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { getAllVaegettableTypes } from '../../api/requestFuntion.js'
-import { mapProduct } from '../../stores/store.js'
+import { mapProduct, mapLocation } from '../../stores/store.js'
 
 const emit = defineEmits(['product-change'])
 
 const mapProductStore = mapProduct()
+const mapLocationStore = mapLocation()
 const productOptions = ref([])
 const selectedProduct = ref(mapProductStore.currentProduct)
+
+// 省份价格排名数据
+const provincePriceRanking = ref([])
+
+const mockPriceDataGroups = [
+  [
+    { day: '第1天', price: 8.5, probability: 0.85 },
+    { day: '第2天', price: 8.3, probability: 0.82 },
+    { day: '第3天', price: 8.1, probability: 0.78 },
+    { day: '第4天', price: 8.0, probability: 0.75 },
+    { day: '第5天', price: 7.9, probability: 0.72 },
+  ],
+  [
+    { day: '第1天', price: 9.2, probability: 0.88 },
+    { day: '第2天', price: 9.0, probability: 0.85 },
+    { day: '第3天', price: 8.8, probability: 0.82 },
+    { day: '第4天', price: 8.6, probability: 0.80 },
+    { day: '第5天', price: 8.5, probability: 0.78 },
+  ],
+  [
+    { day: '第1天', price: 7.9, probability: 0.80 },
+    { day: '第2天', price: 7.7, probability: 0.78 },
+    { day: '第3天', price: 7.5, probability: 0.75 },
+    { day: '第4天', price: 7.4, probability: 0.72 },
+    { day: '第5天', price: 7.3, probability: 0.70 },
+  ],
+]
+
+// 简单的伪随机数生成器（基于种子）
+const seededRandom = (seed) => {
+  let x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
+// 根据蔬菜名称和城市生成5天预测数据
+const generatePredictionData = (productName, cityName) => {
+  const basePrice = 5 + seededRandom(productName.length + cityName.length) * 5
+  const data = []
+  
+  for (let i = 1; i <= 5; i++) {
+    const daySeed = (productName.charCodeAt(i % productName.length || 0) + cityName.charCodeAt(i % cityName.length || 0)) * i
+    const priceVariation = (seededRandom(daySeed) - 0.5) * 2
+    const probability = 0.6 + seededRandom(daySeed + 100) * 0.35
+    
+    data.push({
+      day: `第${i}天`,
+      price: Math.max(1, (basePrice + priceVariation).toFixed(1)),
+      probability: Math.min(0.95, Math.max(0.5, probability))
+    })
+  }
+  
+  return data
+}
+
+// 更新省份价格排名
+const updateProvincePriceRanking = () => {
+  const productName = selectedProduct.value || '大白菜'
+  const cityName = mapLocationStore.currentCity || '郑州市'
+  const predictionData = generatePredictionData(productName, cityName)
+  provincePriceRanking.value = predictionData
+  console.log(`更新 ${productName} (${cityName}) 的5天价格预测：`, predictionData)
+}
 
 // 1. 加载数据的逻辑
 const loadProductOptions = async () => {
@@ -95,10 +181,33 @@ const handleProductChange = (val) => {
   selectedProduct.value = val
   mapProductStore.setCurrentProduct(val)
   emit('product-change', val)
+  updateProvincePriceRanking()
 }
+
+// 监听蔬菜变化
+watch(
+  () => mapProductStore.currentProduct,
+  (newProduct) => {
+    if (newProduct && newProduct !== selectedProduct.value) {
+      selectedProduct.value = newProduct
+      updateProvincePriceRanking()
+    }
+  }
+)
+
+// 监听城市变化
+watch(
+  () => mapLocationStore.currentCity,
+  (newCity) => {
+    if (newCity) {
+      updateProvincePriceRanking()
+    }
+  }
+)
 
 onMounted(() => {
   loadProductOptions()
+  updateProvincePriceRanking()
 })
 </script>
 
@@ -116,7 +225,7 @@ onMounted(() => {
   z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   pointer-events: auto;
 }
 
@@ -132,8 +241,7 @@ onMounted(() => {
 }
 
 .panel-title {
-  font-size: 18px;
-  /* 标题颜色：亮绿色 */
+  font-size: 16px;
   color: #42e3a4;
   font-weight: bold;
   letter-spacing: 1px;
@@ -141,20 +249,20 @@ onMounted(() => {
   white-space: nowrap;
   width: 100%;
   text-align: right;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   border-bottom: 2px solid rgba(66, 227, 164, 0.1);
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .selector-section {
   width: 100%;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .selector-label {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   letter-spacing: 1px;
   text-align: right;
 }
@@ -178,7 +286,6 @@ onMounted(() => {
 .divider-line {
   width: 100%;
   height: 1px;
-  /* 绿色虚线分割 */
   background: repeating-linear-gradient(
     90deg,
     rgba(66, 227, 164, 0.4) 0,
@@ -186,23 +293,116 @@ onMounted(() => {
     transparent 4px,
     transparent 8px
   );
+  margin: 6px 0;
+}
+
+.price-ranking-section {
+  width: 100%;
   margin: 10px 0;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: 12px;
+  color: #42e3a4;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-align: right;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(66, 227, 164, 0.4);
+}
+
+.ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(66, 227, 164, 0.05);
+  border: 1px solid rgba(66, 227, 164, 0.15);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  min-height: 32px;
+}
+
+.ranking-item:hover {
+  background: rgba(66, 227, 164, 0.12);
+  border-color: rgba(66, 227, 164, 0.3);
+  box-shadow: 0 0 10px rgba(66, 227, 164, 0.15);
+}
+
+.day-label {
+  width: 45px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.price-info {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  justify-content: center;
+}
+
+.price-value {
+  font-size: 15px;
+  font-weight: bold;
+  color: #42e3a4;
+  font-family: 'Arial', sans-serif;
+}
+
+.price-unit {
+  font-size: 10px;
+  color: rgba(66, 227, 164, 0.7);
+}
+
+.probability-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(66, 227, 164, 0.1);
+  border: 1px solid rgba(66, 227, 164, 0.2);
+  border-radius: 3px;
+  padding: 3px 6px;
+  min-width: 50px;
+}
+
+.probability-value {
+  font-size: 12px;
+  font-weight: bold;
+  color: #42e3a4;
+  line-height: 1.1;
+}
+
+.probability-label {
+  font-size: 9px;
+  color: rgba(66, 227, 164, 0.6);
+  margin-top: 1px;
 }
 
 .weather-monitor {
   flex: 1;
   overflow: hidden;
   width: 100%;
+  min-height: 0;
 }
 
 .v-ruler {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   opacity: 0.5;
-  padding-top: 10px;
+  padding-top: 6px;
   align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .tick {
