@@ -2,6 +2,14 @@
   <div class="analysis-card">
     <div class="chart-body">
       <div class="chart-section left-section">
+        <div class="radar-container">
+          <div ref="radarChartRef" class="echarts-box"></div>
+        </div>
+      </div>
+
+      <div class="divider-v"></div>
+
+      <div class="chart-section right-section">
         <div class="left-header-block">
           <div class="header-row">
             <span class="product-name">{{ currentProductName }}</span>
@@ -11,14 +19,6 @@
         
         <div class="section-title">近30日价格走势</div>
         <div ref="priceChartRef" class="echarts-box"></div>
-      </div>
-
-      <div class="divider-v"></div>
-
-      <div class="chart-section right-section">
-        <div class="radar-container">
-          <div ref="radarChartRef" class="echarts-box"></div>
-        </div>
       </div>
 
       <div v-if="loading" class="state-mask">
@@ -368,7 +368,7 @@ onUnmounted(() => {
 }
 
 .left-section {
-  flex: 3;
+  flex: 2;
   display: flex;
   flex-direction: column;
 }
@@ -403,7 +403,7 @@ onUnmounted(() => {
 }
 
 .right-section {
-  flex: 2;
+  flex: 3;
   padding-left: 5px;
   height: 100%;
 }

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import provinceCapitalMap from '../assets/json/provinceCapitalMap.json'
 
 // ==========================================
 // 1. 地理位置 Store (管理地图联动)
@@ -12,10 +13,10 @@ export const mapLocation = defineStore('mapLocationPinia', {
     }
   },
   actions: {
-    // 设置省份 -> 自动重置市、区
+    // 设置省份 -> 自动设置为对应省会城市，重置区
     setCurrentProvince(province) {
       this.currentProvince = province
-      this.currentCity = ''
+      this.currentCity = provinceCapitalMap[province]?.name || ''
       this.currentDistrict = ''
     },
 

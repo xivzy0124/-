@@ -49,11 +49,15 @@
               <span class="date-text">{{ index === 0 ? '今日' : formatDay(day.fxDate) }}</span>
               <span class="weather-icon">{{ getWeatherIcon(day.textDay) }}</span>
             </div>
+            <div class="row-center">
+              <span class="condition-text">{{ day.textDay }}</span>
+              <span class="wind-text">{{ day.windDirDay }} {{ day.windScaleDay }}级</span>
+            </div>
             <div class="row-right">
               <span class="temp-text">
                 {{ day.tempMin }}°/<span class="max-temp">{{ day.tempMax }}°</span>
               </span>
-              <span class="condition-text">{{ day.textDay }}</span>
+              <span class="humidity-text">{{ day.humidity }}%</span>
             </div>
           </div>
         </div>
@@ -75,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import ChinaMap from './ChinaMap.vue'
 import ChinaMapRight from './ChinaMapRight.vue'
 
@@ -139,6 +143,30 @@ const formatDay = (dateString) => {
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
+// 获取当前城市的天气代码
+const getCurrentCityCode = () => {
+  const currentProvince = mapLocationStore.currentProvince
+  const currentCity = mapLocationStore.currentCity
+
+  // 如果是全国或北京市，返回北京市代码
+  if (currentProvince === '全国' || currentProvince === '北京市') {
+    return '101010100'
+  }
+
+  // 优先使用城市代码
+  if (cityCodeMap[currentCity]) {
+    return cityCodeMap[currentCity]
+  }
+
+  // 如果没有城市代码，尝试使用省份的省会代码
+  if (provinceCapitalMap[currentProvince]) {
+    return provinceCapitalMap[currentProvince].code
+  }
+
+  // 默认返回北京市代码
+  return '101010100'
+}
+
 // --- 核心逻辑 ---
 
 // 1. 处理来自 ChinaMapRight 的产品切换事件
@@ -169,9 +197,8 @@ const handleMapChange = async (regionName) => {
 
   // 查找映射代码
   if (provinceCapitalMap[regionName]) {
-    // 点击的是省份，更新省份状态，城市显示省会
+    // 点击的是省份，更新省份状态（会自动设置为省会城市）
     mapLocationStore.setCurrentProvince(regionName)
-    mapLocationStore.setCurrentCity(provinceCapitalMap[regionName].name)
     targetCode = provinceCapitalMap[regionName].code
     displayName = provinceCapitalMap[regionName].name
   } else if (cityCodeMap[regionName]) {
@@ -210,10 +237,37 @@ const fetchWeather = async (code) => {
   }
 }
 
+// 5. 监听省份变化，自动获取省会天气
+watch(
+  () => mapLocationStore.currentProvince,
+  async (newProvince, oldProvince) => {
+    if (newProvince && newProvince !== oldProvince && provinceCapitalMap[newProvince]) {
+      const capitalInfo = provinceCapitalMap[newProvince]
+      console.log('省份变化，获取省会天气:', capitalInfo.name, capitalInfo.code)
+      loading.value = true
+      await fetchWeather(capitalInfo.code)
+    }
+  }
+)
+
+// 6. 监听城市变化，自动获取城市天气
+watch(
+  () => mapLocationStore.currentCity,
+  async (newCity, oldCity) => {
+    if (newCity && newCity !== oldCity && cityCodeMap[newCity]) {
+      console.log('城市变化，获取城市天气:', newCity, cityCodeMap[newCity])
+      loading.value = true
+      await fetchWeather(cityCodeMap[newCity])
+    }
+  }
+)
+
 // 生命周期
 onMounted(() => {
-  // 初始化加载默认天气
-  fetchWeather('101010100')
+  // 初始化加载当前 store 状态对应的天气
+  const currentCode = getCurrentCityCode()
+  console.log('初始化加载天气，城市代码:', currentCode)
+  fetchWeather(currentCode)
 })
 </script>
 
@@ -383,6 +437,7 @@ onMounted(() => {
   padding: 0 5px;
   border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
   box-sizing: border-box;
+  min-height: 40px;
 }
 
 .weather-row:last-child {
@@ -393,7 +448,26 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 65px;
+}
+
+.row-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   flex: 1;
+  gap: 2px;
+}
+
+.row-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  justify-content: center;
+  flex: 0 0 60px;
 }
 
 .date-text {
@@ -409,13 +483,26 @@ onMounted(() => {
   text-align: center;
 }
 
+.condition-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.wind-text {
+  font-size: 10px;
+  color: rgba(0, 247, 255, 0.6);
+  white-space: nowrap;
+}
+
 .row-right {
   text-align: right;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-end;
-  flex: 1;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  justify-content: center;
+  flex: 0 0 60px;
 }
 
 .temp-text {
@@ -430,12 +517,9 @@ onMounted(() => {
   color: #00f7ff;
 }
 
-.condition-text {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  min-width: 42px;
-  text-align: right;
-  white-space: nowrap;
+.humidity-text {
+  font-size: 10px;
+  color: rgba(0, 247, 255, 0.6);
 }
 
 .no-data {

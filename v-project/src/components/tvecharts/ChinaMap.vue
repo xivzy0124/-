@@ -24,10 +24,19 @@ const chartInstance = shallowRef(null)
 const currentMapName = ref('china')
 const currentAdcode = ref('100000')
 
-// 用于记录历史记录，实现返回上一级功能
+const timer = ref(null)
+const regionNames = ref([])
+const lastHighlightName = ref('')
 const historyStack = ref([])
 
-// 加载地图数据
+// --- 修改点 1: 定义不想参与随机高亮的地区名单 ---
+// 注意：名字必须和地图 GeoJSON 里的名字完全一致
+const ignoredRegions = [
+  '台湾省', 
+  '香港特别行政区', 
+  '澳门特别行政区',
+]
+
 const loadMapData = async (mapName, adcode) => {
   chartInstance.value.showLoading({
     text: '数据加载中...',
@@ -37,39 +46,99 @@ const loadMapData = async (mapName, adcode) => {
   })
 
   try {
-    // 阿里云 DataV Atlas 数据源
     const url = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`
     const response = await fetch(url)
     
-    // 如果是区县级，可能没有下一级地图，API会返回404或其他错误
     if (!response.ok) {
         throw new Error('No child map data')
     }
 
     const geoJson = await response.json()
 
-    // 注册地图
+    // --- 修改点 2: 提取名字时进行过滤 ---
+    // 逻辑：获取所有名字 -> 过滤掉在 ignoredRegions 里的名字
+    regionNames.value = geoJson.features
+      .map(feature => feature.properties.name)
+      .filter(name => !ignoredRegions.includes(name))
+
     echarts.registerMap(mapName, geoJson)
     
-    // 更新当前状态
     currentMapName.value = mapName
     currentAdcode.value = adcode
     
     chartInstance.value.hideLoading()
     setOptions(mapName)
     
-    return true // 加载成功
+    startRandomHighlight()
+    
+    return true 
   } catch (error) {
-    console.warn('无法加载下一级地图（可能已到达最底层区县）:', error)
+    console.warn('无法加载下一级地图:', error)
     chartInstance.value.hideLoading()
-    return false // 加载失败
+    return false 
   }
 }
 
-// 返回上一级
+// --- 随机高亮逻辑 (无需修改，因为它依赖 regionNames) ---
+const startRandomHighlight = () => {
+  stopRandomHighlight()
+  
+  if (regionNames.value.length === 0) return
+
+  timer.value = setInterval(() => {
+    if (!chartInstance.value) return
+
+    if (lastHighlightName.value) {
+      chartInstance.value.dispatchAction({
+        type: 'downplay',
+        geoIndex: 0,
+        name: lastHighlightName.value
+      })
+    }
+
+    const randomIndex = Math.floor(Math.random() * regionNames.value.length)
+    const randomName = regionNames.value[randomIndex]
+
+    chartInstance.value.dispatchAction({
+      type: 'highlight',
+      geoIndex: 0,
+      name: randomName
+    })
+    
+    chartInstance.value.dispatchAction({
+      type: 'showTip',
+      seriesIndex: 0, 
+      name: randomName
+    })
+
+    if (currentMapName.value === 'china') {
+      mapLocationStore.setCurrentProvince(randomName)
+    } else {
+      mapLocationStore.setCurrentCity(randomName)
+    }
+
+    lastHighlightName.value = randomName
+
+  }, 2000)
+}
+
+const stopRandomHighlight = () => {
+  if (timer.value) {
+    clearInterval(timer.value)
+    timer.value = null
+  }
+  if (chartInstance.value && lastHighlightName.value) {
+    chartInstance.value.dispatchAction({
+      type: 'downplay',
+      geoIndex: 0,
+      name: lastHighlightName.value
+    })
+    chartInstance.value.dispatchAction({ type: 'hideTip' })
+  }
+}
+
 const backToPrevious = async () => {
   if (historyStack.value.length === 0) return
-  
   const prev = historyStack.value.pop()
   await loadMapData(prev.mapName, prev.adcode)
   emit('region-change', prev.mapName === 'china' ? '全国' : prev.mapName)
@@ -79,23 +148,23 @@ defineExpose({
   backToPrevious,
 })
 
-// 初始化图表
 const initChart = async () => {
   if (!chartRef.value) return
   chartInstance.value = echarts.init(chartRef.value)
 
-  // 初始加载全国地图
+  chartInstance.value.getZr().on('mousemove', () => {
+    if (timer.value) stopRandomHighlight()
+  })
+  chartInstance.value.getZr().on('globalout', () => {
+    startRandomHighlight()
+  })
+
   await loadMapData('china', '100000')
 
-  // --- 核心修改：通用点击下钻逻辑 ---
   chartInstance.value.on('click', async (params) => {
     if (params.componentType === 'geo') {
       const clickedRegionName = params.name
-      
-      // 1. 获取当前已注册地图的 GeoJSON 数据
       const currentGeoJson = echarts.getMap(currentMapName.value).geoJson
-      
-      // 2. 在 GeoJSON 的 features 中查找点击区域的详细信息（包含 adcode）
       const feature = currentGeoJson.features.find(
         (f) => f.properties.name === clickedRegionName
       )
@@ -103,52 +172,38 @@ const initChart = async () => {
       if (feature && feature.properties.adcode) {
         const nextAdcode = feature.properties.adcode
         
-        // 3. 记录当前状态到历史栈（为了能返回）
         historyStack.value.push({
           mapName: currentMapName.value,
           adcode: currentAdcode.value
         })
 
-        // 4. 尝试加载下一级地图
+        stopRandomHighlight() 
+
         const success = await loadMapData(clickedRegionName, nextAdcode)
 
         if (success) {
-           // A. 如果加载成功（说明有下一级地图，如省->市，或 市->区）
-           // 更新 Store 和通知父组件
            if (clickedRegionName !== 'china') {
-             // 简单的逻辑：如果是省份层级，存省；如果是市层级，存市
-             // 这里统一发送当前选中的区域名称
              mapLocationStore.setCurrentCity(clickedRegionName)
            }
            emit('region-change', clickedRegionName)
         } else {
-           // B. 如果加载失败（说明已经是区县级，或者API没有该区县的详细内部地图）
-           // 此时不切换地图视图，但仍然算作"选中"了该区域
-           
-           // 回退历史栈（因为没跳过去）
            historyStack.value.pop() 
-           
-           // 仍然通知 Store 和父组件更新数据
            console.log(`已到达最底层：${clickedRegionName}`)
            mapLocationStore.setCurrentCity(clickedRegionName)
            emit('region-change', clickedRegionName)
-           
-           // 可选：在这里做一个高亮效果提示用户选中了区县
+           startRandomHighlight()
         }
       }
     }
   })
 }
 
-// 设置配置项
-// 设置配置项
 const setOptions = (mapName) => {
   if (!chartInstance.value) return
 
   const option = {
     backgroundColor: 'transparent',
     tooltip: {
-      // ... 保持原有 tooltip 配置
       trigger: 'item',
       backgroundColor: 'rgba(0,0,0,0.8)',
       borderColor: '#45d0b2',
@@ -162,14 +217,11 @@ const setOptions = (mapName) => {
       map: mapName,
       roam: true,
       zoom: 1.2,
-      // --- 修改开始：关闭默认标签显示 ---
       label: {
-        show: false, // 这里改为 false
+        show: false, 
         color: '#7fffd4',
         fontSize: 10,
       },
-      // --- 修改结束 ---
-      
       itemStyle: {
         areaColor: {
           type: 'linear',
@@ -184,15 +236,14 @@ const setOptions = (mapName) => {
         shadowColor: '#00ffff',
         shadowBlur: 10,
       },
-      // 这里的 emphasis 设置保留，这样鼠标悬停时（高亮状态）仍然会显示名字
       emphasis: {
-        label: { show: true, color: '#fff' }, 
+        label: { show: true, color: '#fff', fontSize: 14, fontWeight: 'bold' }, 
         itemStyle: {
-          areaColor: 'rgba(69, 208, 178, 0.8)',
+          areaColor: '#f1c40f',
           borderColor: '#ffffff',
           borderWidth: 2,
           shadowBlur: 20,
-          shadowColor: '#fff',
+          shadowColor: '#f1c40f',
         },
       },
       select: {
@@ -212,6 +263,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  stopRandomHighlight()
   window.removeEventListener('resize', handleResize)
   chartInstance.value?.dispose()
 })
@@ -224,7 +276,6 @@ onUnmounted(() => {
   position: relative;
   background: transparent;
 }
-
 .echarts-box {
   width: 100%;
   height: 100%;

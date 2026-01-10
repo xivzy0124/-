@@ -80,9 +80,32 @@ public class WeatherController {
                 for (JsonNode dayNode : dailyArray) {
                     WeatherDTO dto = new WeatherDTO();
                     dto.setFxDate(dayNode.path("fxDate").asText());
+                    dto.setSunrise(dayNode.path("sunrise").asText());
+                    dto.setSunset(dayNode.path("sunset").asText());
+                    dto.setMoonrise(dayNode.path("moonrise").asText());
+                    dto.setMoonset(dayNode.path("moonset").asText());
+                    dto.setMoonPhase(dayNode.path("moonPhase").asText());
+                    dto.setMoonPhaseIcon(dayNode.path("moonPhaseIcon").asText());
                     dto.setTempMax(dayNode.path("tempMax").asText());
                     dto.setTempMin(dayNode.path("tempMin").asText());
+                    dto.setIconDay(dayNode.path("iconDay").asText());
                     dto.setTextDay(dayNode.path("textDay").asText());
+                    dto.setIconNight(dayNode.path("iconNight").asText());
+                    dto.setTextNight(dayNode.path("textNight").asText());
+                    dto.setWind360Day(dayNode.path("wind360Day").asText());
+                    dto.setWindDirDay(dayNode.path("windDirDay").asText());
+                    dto.setWindScaleDay(dayNode.path("windScaleDay").asText());
+                    dto.setWindSpeedDay(dayNode.path("windSpeedDay").asText());
+                    dto.setWind360Night(dayNode.path("wind360Night").asText());
+                    dto.setWindDirNight(dayNode.path("windDirNight").asText());
+                    dto.setWindScaleNight(dayNode.path("windScaleNight").asText());
+                    dto.setWindSpeedNight(dayNode.path("windSpeedNight").asText());
+                    dto.setHumidity(dayNode.path("humidity").asText());
+                    dto.setPrecip(dayNode.path("precip").asText());
+                    dto.setPressure(dayNode.path("pressure").asText());
+                    dto.setVis(dayNode.path("vis").asText());
+                    dto.setCloud(dayNode.path("cloud").asText());
+                    dto.setUvIndex(dayNode.path("uvIndex").asText());
                     weatherList.add(dto);
                 }
 
