@@ -1,10 +1,10 @@
 import axios from "axios";
 
 const service = axios.create({
-  // baseURL: '/api', // 服务器专用版
-  // baseURL: 'http://47.117.34.210:8080/', // 设置基础URL
-  baseURL: 'http://localhost:8080/', // 设置基础URL
-  timeout: 15000,// 设置请求超时时间
+  //后端地址
+  baseURL: 'http://192.168.201.251:8080/',
+  // baseURL: 'http://127.0.0.1:8080/',
+  timeout: 15000,
 });
 
 // Response interceptors

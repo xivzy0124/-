@@ -42,7 +42,62 @@ export function getAllVaegettableTypes() {
 }
 
 
+/**
+ * 文本转语音播放函数
+ * @param {string} text - 你想要播放的文字内容
+ */
+export async function speak(text) {
+  // --- 配置区域 (内部存放) ---
+  // 1. 在这里填入你的 SiliconFlow API Key
+  const API_KEY = "sk-zxeavsjuzkbxhzgyjduoefhuseoeerfzxxiicoztfyoudpcy";
 
+  // 2. 内部配置 (已根据文档填好默认值)
+  const API_URL = "https://api.siliconflow.cn/v1/audio/speech";
+  const MODEL = "FunAudioLLM/CosyVoice2-0.5B";
+  const VOICE = "FunAudioLLM/CosyVoice2-0.5B:anna"; // 默认沉稳男声 alex
+  // -------------------------
+
+  if (!text) {
+    console.warn("请输入文本");
+    return;
+  }
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        input: text,       // 这里的 input 对应文档要求的参数
+        voice: VOICE,
+        response_format: "mp3",
+        speed: 1.0,
+        gain: 0.0
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`请求失败: ${response.status} ${await response.text()}`);
+    }
+
+    // 获取音频流并播放
+    const blob = await response.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+
+    // 播放音频
+    await audio.play();
+
+    // 播放完释放内存
+    audio.onended = () => URL.revokeObjectURL(audioUrl);
+
+  } catch (error) {
+    console.error("播放出错:", error);
+  }
+}
 
 
 
@@ -370,6 +425,53 @@ export function getNationalPredictedPrices(vegetable) {
     method: 'GET',
     url: '/api/ai/predictPrice/national',
     params: { vegetable },
+  })
+}
+
+/**
+ * 获取中国地图数据
+ * @returns {Promise}
+ */
+export function getChinaMap() {
+  return service({
+    method: 'GET',
+    url: '/api/map/china',
+  })
+}
+
+/**
+ * 获取省份地图数据
+ * @param {String} adcode - 省份adcode
+ * @returns {Promise}
+ */
+export function getProvinceMap(adcode) {
+  return service({
+    method: 'GET',
+    url: `/api/map/province/${adcode}`,
+  })
+}
+
+/**
+ * 获取城市地图数据
+ * @param {String} adcode - 城市adcode
+ * @returns {Promise}
+ */
+export function getCityMap(adcode) {
+  return service({
+    method: 'GET',
+    url: `/api/map/city/${adcode}`,
+  })
+}
+
+/**
+ * 获取区域名称列表
+ * @param {String} adcode - 区域adcode
+ * @returns {Promise}
+ */
+export function getRegionNames(adcode) {
+  return service({
+    method: 'GET',
+    url: `/api/map/regions/${adcode}`,
   })
 }
 

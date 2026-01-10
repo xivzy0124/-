@@ -3,7 +3,7 @@
     <div v-if="!isPredicting && !showResults" class="start-prediction-wrapper">
       <button class="start-btn" @click="startPrediction">
         <span class="btn-icon">🤖</span>
-        <span class="btn-text">开始预测</span>
+        <span class="btn-text">开始辅助决策</span>
       </button>
     </div>
 
@@ -11,7 +11,7 @@
       <div class="panel-header">
         <div class="panel-title">
           <span class="title-icon">📊</span>
-          <span>AI 智能预测</span>
+          <span>AI 智能辅助决策</span>
         </div>
         <button v-if="showResults" class="close-btn" @click="closePrediction">✕</button>
       </div>
@@ -138,9 +138,10 @@ const timelineIndex = ref(-1)
 const loadingMessages = [
   '正在分析历史数据...',
   '正在加载市场信息...',
-  'AI 模型计算中...',
-  '生成预测结果...',
-  '优化预测精度...'
+  '正在启动AI工作流...',
+  '查询知识库相关案例中...',
+  // '生成预测结果...',
+  '开始生成建议...'
 ]
 
 const startPrediction = async () => {

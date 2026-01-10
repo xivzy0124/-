@@ -128,6 +128,14 @@ const handleBackToChina = async () => {
   await chinaMapRef.value?.backToPrevious()
 }
 
+const loadProvinceAndHighlightCity = async (provinceName, cityName) => {
+  await chinaMapRef.value?.loadProvinceAndHighlightCity(provinceName, cityName)
+}
+
+defineExpose({
+  loadProvinceAndHighlightCity,
+})
+
 onMounted(() => {
   weatherMonitorRef.value?.initWeather()
 })

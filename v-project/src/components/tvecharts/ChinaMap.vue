@@ -5,11 +5,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, shallowRef } from 'vue'
+import { ref, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import * as echarts from 'echarts'
-import { mapLocation } from '../../stores/store.js'
+import { mapLocation, voiceRecognition } from '../../stores/store.js'
+import { getChinaMap, getProvinceMap, getCityMap, getRegionNames } from '../../api/requestFuntion.js'
 
 const mapLocationStore = mapLocation()
+const voiceRecognitionStore = voiceRecognition()
 const emit = defineEmits(['region-change', 'map-level-change'])
 
 const props = defineProps({
@@ -46,20 +48,26 @@ const loadMapData = async (mapName, adcode) => {
   })
 
   try {
-    const url = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`
-    const response = await fetch(url)
-    
-    if (!response.ok) {
-        throw new Error('No child map data')
+    let response
+    let geoJson
+
+    if (mapName === 'china') {
+      response = await getChinaMap()
+    } else if (currentMapName.value === 'china') {
+      response = await getProvinceMap(adcode)
+    } else {
+      response = await getCityMap(adcode)
     }
 
-    const geoJson = await response.json()
+    if (response) {
+      geoJson = response
+    } else {
+      throw new Error('API返回数据格式错误')
+    }
 
-    // --- 修改点 2: 提取名字时进行过滤 ---
-    // 逻辑：获取所有名字 -> 过滤掉在 ignoredRegions 里的名字
-    regionNames.value = geoJson.features
-      .map(feature => feature.properties.name)
-      .filter(name => !ignoredRegions.includes(name))
+    if (!geoJson) {
+      throw new Error('地图数据为空')
+    }
 
     echarts.registerMap(mapName, geoJson)
     
@@ -75,16 +83,31 @@ const loadMapData = async (mapName, adcode) => {
     
     return true 
   } catch (error) {
-    console.warn('无法加载下一级地图:', error)
+    console.warn('无法加载地图数据:', error)
     chartInstance.value.hideLoading()
     return false 
   }
 }
 
 // --- 随机高亮逻辑 (无需修改，因为它依赖 regionNames) ---
-const startRandomHighlight = () => {
+const startRandomHighlight = async () => {
   stopRandomHighlight()
   
+  if (voiceRecognitionStore.isEnabled) return
+
+  try {
+    const response = await getRegionNames(currentAdcode.value)
+    if (response) {
+      regionNames.value = response.filter(name => !ignoredRegions.includes(name))
+    } else {
+      console.warn('获取区域名称失败')
+      return
+    }
+  } catch (error) {
+    console.warn('获取区域名称失败:', error)
+    return
+  }
+
   if (regionNames.value.length === 0) return
 
   timer.value = setInterval(() => {
@@ -147,8 +170,53 @@ const backToPrevious = async () => {
   emit('map-level-change', prev.mapName === 'china')
 }
 
+const loadProvinceAndHighlightCity = async (provinceName, cityName) => {
+  stopRandomHighlight()
+  
+  const currentGeoJson = echarts.getMap(currentMapName.value).geoJson
+  const feature = currentGeoJson.features.find(
+    (f) => f.properties.name === provinceName
+  )
+  
+  if (feature && feature.properties.adcode) {
+    const nextAdcode = feature.properties.adcode
+    
+    historyStack.value.push({
+      mapName: currentMapName.value,
+      adcode: currentAdcode.value
+    })
+
+    const success = await loadMapData(provinceName, nextAdcode)
+
+    if (success) {
+      mapLocationStore.setCurrentProvince(provinceName)
+      mapLocationStore.setCurrentCity(cityName)
+      emit('region-change', cityName)
+      
+      setTimeout(() => {
+        if (chartInstance.value) {
+          chartInstance.value.dispatchAction({
+            type: 'highlight',
+            geoIndex: 0,
+            name: cityName
+          })
+          chartInstance.value.dispatchAction({
+            type: 'showTip',
+            seriesIndex: 0,
+            name: cityName
+          })
+          lastHighlightName.value = cityName
+        }
+      }, 500)
+    } else {
+      historyStack.value.pop()
+    }
+  }
+}
+
 defineExpose({
   backToPrevious,
+  loadProvinceAndHighlightCity,
 })
 
 const initChart = async () => {
@@ -259,6 +327,14 @@ const setOptions = (mapName) => {
 }
 
 const handleResize = () => chartInstance.value?.resize()
+
+watch(() => voiceRecognitionStore.isEnabled, (newValue) => {
+  if (newValue) {
+    stopRandomHighlight()
+  } else {
+    startRandomHighlight()
+  }
+})
 
 onMounted(() => {
   initChart()

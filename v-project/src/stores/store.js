@@ -130,3 +130,57 @@ export const voiceBroadcast = defineStore('voiceBroadcastPinia', {
   },
   persist: true // 启用持久化存储
 })
+
+// ==========================================
+// 5. 语音识别 Store (管理语音识别状态)
+// ==========================================
+export const voiceRecognition = defineStore('voiceRecognitionPinia', {
+  state: () => {
+    return {
+      isEnabled: false, // 语音识别是否开启，默认为未开启
+      isListening: false, // 是否正在监听
+      result: '', // 识别结果
+    }
+  },
+  actions: {
+    // 切换语音识别状态
+    toggleVoiceRecognition() {
+      this.isEnabled = !this.isEnabled
+    },
+
+    // 开启语音识别
+    enableVoiceRecognition() {
+      this.isEnabled = true
+    },
+
+    // 关闭语音识别
+    disableVoiceRecognition() {
+      this.isEnabled = false
+    },
+
+    // 开始监听
+    startListening() {
+      this.isListening = true
+      this.result = ''
+    },
+
+    // 停止监听
+    stopListening() {
+      this.isListening = false
+    },
+
+    // 设置识别结果
+    setResult(text) {
+      this.result = text
+    },
+
+    // 清空识别结果
+    clearResult() {
+      this.result = ''
+    },
+  },
+  persist: true // 启用持久化存储
+})
+
+
+

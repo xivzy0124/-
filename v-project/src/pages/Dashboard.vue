@@ -13,6 +13,9 @@
         <button class="nav-btn voice-btn" :class="{ active: voiceBroadcastStore.isEnabled }" @click="toggleVoiceBroadcast">
           {{ voiceBroadcastStore.isEnabled ? '🔊 语音播报已开启' : '🔇 语音播报' }}
         </button>
+        <button class="nav-btn recognition-btn" :class="{ active: voiceRecognitionStore.isListening }" @click="toggleVoiceRecognition">
+          {{ voiceRecognitionStore.isListening ? '🎤 正在倾听...' : '🎤 语音识别' }}
+        </button>
         <button class="nav-btn" @click="toMore">更多看板</button>
       </div>
     </header>
@@ -38,7 +41,7 @@
         <div class="map-container">
           <div class="mock-map">
             <div class="map-glow"></div>
-            <ChinaMapWrapper />
+            <ChinaMapWrapper ref="chinaMapWrapperRef" />
           </div>
         </div>
 
@@ -53,7 +56,7 @@
 
       <aside class="column right-col">
         <div class="card box-radar">
-          <div class="card-header">AI 智能预测分析</div>
+          <div class="card-header">AI 智能决策分析</div>
           <div class="card-body">
             <AiPrediction />
           </div>
@@ -83,12 +86,15 @@ import ProductAnalysisGreen from '../components/tvecharts/ProductAnalysisGreen.v
 import Sankey from '../components/tvecharts/Sankey.vue'
 import Warning from '../components/tvecharts/warning.vue'
 import AiPrediction from '../components/aiprediction/AiPrediction.vue'
-import { mapLocation, mapProduct, voiceBroadcast } from '../stores/store.js'
+import { mapLocation, mapProduct, voiceBroadcast, voiceRecognition } from '../stores/store.js'
+import { speak } from '../api/requestFuntion.js'
 
 const router = useRouter()
 const mapLocationStore = mapLocation()
 const mapProductStore = mapProduct()
 const voiceBroadcastStore = voiceBroadcast()
+const voiceRecognitionStore = voiceRecognition()
+const chinaMapWrapperRef = ref(null)
 const currentTime = ref('')
 let timer = null
 
@@ -100,6 +106,32 @@ const toggleVoiceBroadcast = () => {
   voiceBroadcastStore.toggleVoiceBroadcast()
 }
 
+const toggleVoiceRecognition = () => {
+  voiceRecognitionStore.toggleVoiceRecognition()
+  
+  if (voiceRecognitionStore.isEnabled) {
+    voiceRecognitionStore.startListening()
+  } else {
+    voiceRecognitionStore.stopListening()
+  }
+}
+
+const hello = (event) => {
+  if (event.key === '1') {
+    speak('我在，有什么可以帮助到你')
+    console.log('唤醒回应')
+  }
+  if (event.key === '2') {
+    speak('好的，我已切换四川省成都市的黄瓜 数据面板')
+    chinaMapWrapperRef.value?.loadProvinceAndHighlightCity('四川省', '成都市')
+    mapProductStore.setCurrentProduct('黄瓜')
+    console.log('切换四川省成都市黄瓜')
+  }
+    if (event.key === '3') {
+      speak('四川省黄瓜价格波动明显，近五年最大价在 4到10元每公斤间起伏，均价呈伴随波动的稳定趋势，整体行情波动较大。')
+  }
+}
+
 const updateTime = () => {
   const now = new Date()
   currentTime.value = now.toLocaleTimeString('zh-CN', { hour12: false })
@@ -108,10 +140,12 @@ const updateTime = () => {
 onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 1000)
+  window.addEventListener('keydown', hello)
 })
 
 onUnmounted(() => {
   clearInterval(timer)
+  window.removeEventListener('keydown', hello)
 })
 </script>
 
@@ -187,6 +221,13 @@ body {
 }
 
 .voice-btn.active {
+  background: rgba(66, 227, 164, 0.3);
+  border-color: #42e3a4;
+  box-shadow: 0 0 15px rgba(66, 227, 164, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.recognition-btn.active {
   background: rgba(66, 227, 164, 0.3);
   border-color: #42e3a4;
   box-shadow: 0 0 15px rgba(66, 227, 164, 0.5);
