@@ -36,32 +36,7 @@
 
       <div class="divider-line"></div>
 
-      <div class="weather-monitor">
-        <div v-if="loading" class="no-data">
-          <span class="blinking">数据同步中...</span>
-        </div>
-        <div v-else-if="weatherForecast.length === 0" class="no-data">
-          <span>暂无数据</span>
-        </div>
-        <div v-else class="weather-list">
-          <div v-for="(day, index) in weatherForecast" :key="day.fxDate" class="weather-row">
-            <div class="row-left">
-              <span class="date-text">{{ index === 0 ? '今日' : formatDay(day.fxDate) }}</span>
-              <span class="weather-icon">{{ getWeatherIcon(day.textDay) }}</span>
-            </div>
-            <div class="row-center">
-              <span class="condition-text">{{ day.textDay }}</span>
-              <span class="wind-text">{{ day.windDirDay }} {{ day.windScaleDay }}级</span>
-            </div>
-            <div class="row-right">
-              <span class="temp-text">
-                {{ day.tempMin }}°/<span class="max-temp">{{ day.tempMax }}°</span>
-              </span>
-              <span class="humidity-text">{{ day.humidity }}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <WeatherMonitor ref="weatherMonitorRef" />
 
       <div class="v-ruler">
         <span v-for="i in 8" :key="i" class="tick"></span>
@@ -73,21 +48,20 @@
     <div class="decor-label">智慧农业数据分析平台 // 实时监控</div>
 
     <div class="map-core">
-      <ChinaMap ref="chinaMapRef" :city-data="cityData" @region-change="handleMapChange" />
+      <ChinaMap ref="chinaMapRef" :city-data="cityData" @region-change="handleMapChange" @map-level-change="handleMapLevelChange" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import ChinaMap from './ChinaMap.vue'
 import ChinaMapRight from './ChinaMapRight.vue'
+import WeatherMonitor from './WeatherMonitor.vue'
 
-import { get7DayWeather } from '../../api/requestFuntion.js'
 import { mapLocation } from '../../stores/store.js'
 import provinceCapitalMap from '../../assets/json/provinceCapitalMap.json'
 import cityCodeMap from '../../assets/json/cityCodeMap.json'
-import weatherIconMap from '../../assets/json/weatherIconMap.json'
 
 // Props 定义
 const props = defineProps({
@@ -96,87 +70,35 @@ const props = defineProps({
 
 // 引用与状态
 const chinaMapRef = ref(null)
+const weatherMonitorRef = ref(null)
 const mapLocationStore = mapLocation()
+const isChinaMap = ref(true)
 
-// 天气相关状态
-const weatherForecast = ref([])
-const loading = ref(false)
+const isDrillDown = computed(() => !isChinaMap.value)
 
-// 计算属性：判断是否处于下钻状态（非北京/非默认状态）
-const isDrillDown = computed(() => {
-  return mapLocationStore.currentProvince !== '北京' && mapLocationStore.currentProvince !== '全国'
-})
-
-// 计算属性：显示正确的城市名称
 const displayCityName = computed(() => {
   const currentProvince = mapLocationStore.currentProvince
   const currentCity = mapLocationStore.currentCity
 
-  // 如果是全国，显示北京市
   if (currentProvince === '全国' || currentProvince === '北京市') {
     return '北京市'
   }
 
-  // 如果是省份级别
   if (provinceCapitalMap[currentProvince]) {
     const capitalCity = provinceCapitalMap[currentProvince].name
-    // 如果当前城市不等于省会城市，说明点击了具体城市，显示当前城市
     if (currentCity !== capitalCity) {
       return currentCity
     }
-    // 否则显示省会城市
     return capitalCity
   }
 
-  // 如果是具体城市，显示城市名称
   return currentCity
 })
 
-// --- 工具函数 ---
-
-// 获取天气图标
-const getWeatherIcon = (text) => weatherIconMap[text] || '🌤️'
-
-// 格式化日期
-const formatDay = (dateString) => {
-  const date = new Date(dateString)
-  return `${date.getMonth() + 1}/${date.getDate()}`
-}
-
-// 获取当前城市的天气代码
-const getCurrentCityCode = () => {
-  const currentProvince = mapLocationStore.currentProvince
-  const currentCity = mapLocationStore.currentCity
-
-  // 如果是全国或北京市，返回北京市代码
-  if (currentProvince === '全国' || currentProvince === '北京市') {
-    return '101010100'
-  }
-
-  // 优先使用城市代码
-  if (cityCodeMap[currentCity]) {
-    return cityCodeMap[currentCity]
-  }
-
-  // 如果没有城市代码，尝试使用省份的省会代码
-  if (provinceCapitalMap[currentProvince]) {
-    return provinceCapitalMap[currentProvince].code
-  }
-
-  // 默认返回北京市代码
-  return '101010100'
-}
-
-// --- 核心逻辑 ---
-
-// 1. 处理来自 ChinaMapRight 的产品切换事件
 const handleProductChange = (category) => {
   console.log('父组件感知到产品切换:', category.name)
-  // 如果需要根据产品获取地图分布数据，可以在这里调用接口
-  // fetchMapDataByProduct(category.name)
 }
 
-// 2. 处理地图区域切换 (点击地图下钻)
 const handleMapChange = async (regionName) => {
   console.log('=== 开发者日志 - 切换区域 ===')
   console.log('当前 store 状态:', {
@@ -188,86 +110,26 @@ const handleMapChange = async (regionName) => {
 
   if (regionName === '全国' || regionName === '北京市') {
     mapLocationStore.resetLocation()
-    await fetchWeather('101010100')
     return
   }
 
-  let targetCode = ''
-  let displayName = regionName
-
-  // 查找映射代码
   if (provinceCapitalMap[regionName]) {
-    // 点击的是省份，更新省份状态（会自动设置为省会城市）
     mapLocationStore.setCurrentProvince(regionName)
-    targetCode = provinceCapitalMap[regionName].code
-    displayName = provinceCapitalMap[regionName].name
   } else if (cityCodeMap[regionName]) {
-    // 点击的是具体城市，更新城市状态
     mapLocationStore.setCurrentCity(regionName)
-    targetCode = cityCodeMap[regionName]
-  }
-
-  // 如果找到了对应的城市代码，更新状态并获取天气
-  if (targetCode) {
-    loading.value = true
-    console.log('更新后的 store 状态:', {
-      省份: mapLocationStore.currentProvince,
-      城市: mapLocationStore.currentCity,
-      蔬菜: mapLocationStore.currentProduct,
-    })
-    console.log('天气代码:', targetCode)
-    await fetchWeather(targetCode)
   }
 }
 
-// 3. 处理返回按钮点击
+const handleMapLevelChange = (isChina) => {
+  isChinaMap.value = isChina
+}
+
 const handleBackToChina = async () => {
-  // 调用地图子组件的方法返回上一级
   await chinaMapRef.value?.backToPrevious()
 }
 
-// 4. 获取天气数据
-const fetchWeather = async (code) => {
-  try {
-    weatherForecast.value = await get7DayWeather(code)
-  } catch (e) {
-    console.error('天气获取失败', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-// 5. 监听省份变化，自动获取省会天气
-watch(
-  () => mapLocationStore.currentProvince,
-  async (newProvince, oldProvince) => {
-    if (newProvince && newProvince !== oldProvince && provinceCapitalMap[newProvince]) {
-      const capitalInfo = provinceCapitalMap[newProvince]
-      console.log('省份变化，获取省会天气:', capitalInfo.name, capitalInfo.code)
-      loading.value = true
-      await fetchWeather(capitalInfo.code)
-    }
-  }
-)
-
-// 6. 监听城市变化，自动获取城市天气
-watch(
-  () => mapLocationStore.currentCity,
-  async (newCity, oldCity) => {
-    if (newCity && newCity !== oldCity && cityCodeMap[newCity]) {
-      console.log('城市变化，获取城市天气:', newCity, cityCodeMap[newCity])
-      loading.value = true
-      await fetchWeather(cityCodeMap[newCity])
-    }
-  }
-)
-
-// 生命周期
 onMounted(() => {
-  // 初始化加载当前 store 状态对应的天气
-  const currentCode = getCurrentCityCode()
-  console.log('初始化加载天气，城市代码:', currentCode)
-  fetchWeather(currentCode)
+  weatherMonitorRef.value?.initWeather()
 })
 </script>
 
