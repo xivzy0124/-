@@ -73,6 +73,12 @@
         </div>
       </aside>
     </main>
+
+    <PricePrediction 
+      :visible="showPricePrediction" 
+      @close="showPricePrediction = false"
+      @confirm="(data) => { console.log('预测确认:', data); speak('预测已保存') }"
+    />
   </div>
 </template>
 
@@ -86,6 +92,7 @@ import ProductAnalysisGreen from '../components/tvecharts/ProductAnalysisGreen.v
 import Sankey from '../components/tvecharts/Sankey.vue'
 import Warning from '../components/tvecharts/warning.vue'
 import AiPrediction from '../components/aiprediction/AiPrediction.vue'
+import PricePrediction from '../components/priceprediction/PricePrediction.vue'
 import { mapLocation, mapProduct, voiceBroadcast, voiceRecognition } from '../stores/store.js'
 import { speak } from '../api/requestFuntion.js'
 
@@ -96,6 +103,7 @@ const voiceBroadcastStore = voiceBroadcast()
 const voiceRecognitionStore = voiceRecognition()
 const chinaMapWrapperRef = ref(null)
 const currentTime = ref('')
+const showPricePrediction = ref(false)
 let timer = null
 
 const toHome = () => router.push('/')
@@ -127,8 +135,16 @@ const hello = (event) => {
     mapProductStore.setCurrentProduct('黄瓜')
     console.log('切换四川省成都市黄瓜')
   }
-    if (event.key === '3') {
-      speak('四川省黄瓜价格波动明显，近五年最大价在 4到10元每公斤间起伏，均价呈伴随波动的稳定趋势，整体行情波动较大。')
+  if (event.key === '3') {
+    speak('四川省黄瓜价格波动明显，近五年最大价在 4到10元每公斤间起伏，均价呈伴随波动的稳定趋势，整体行情波动较大。')
+  }
+  if (event.key === '4') {
+    speak('好的，即将为您执行命令')
+  }
+  if (event.key === '0') {
+    showPricePrediction.value = true
+    speak('已打开价格预测面板')
+    console.log('打开价格预测')
   }
 }
 
