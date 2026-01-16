@@ -67,7 +67,7 @@
           <div class="card-body">
             
             <div class="warning-container">
-              <Warning />
+              <Warning :province="mapLocationStore.currentProvince" :product="mapProductStore.currentProduct" />
             </div>
           </div>
         </div>
@@ -228,7 +228,9 @@ body {
 }
 
 .header-center {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -475,6 +477,11 @@ body {
   grid-template-rows: 1fr 1fr;
   gap: 10px;
   padding: 5px;
+}
+
+.warning-container {
+  width: 100%;
+  height: 100%;
 }
 
 .cctv-item {
