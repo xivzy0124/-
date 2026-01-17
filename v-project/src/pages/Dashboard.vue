@@ -1,5 +1,19 @@
 <template>
   <div class="dashboard-container">
+    <!-- 视频背景（从第一段合并） -->
+    <video 
+      autoplay 
+      muted 
+      loop 
+      playsinline 
+      class="video-background"
+    >
+      <source src="/videos/bg03.mp4" type="video/mp4" />
+    </video>
+    
+    <!-- 独立的遮罩层元素 -->
+    <div class="video-overlay"></div>
+
     <header class="header">
       <div class="header-left">
         <span class="time">{{ currentTime }}</span>
@@ -65,7 +79,6 @@
         <div class="card box-cctv">
           <div class="card-header">⚠️ 预警提示</div>
           <div class="card-body">
-            
             <div class="warning-container">
               <Warning :province="mapLocationStore.currentProvince" :product="mapProductStore.currentProduct" />
             </div>
@@ -194,24 +207,83 @@ body {
 </style>
 
 <style scoped>
-/* === 基础容器 === */
+/* === 基础容器：添加 position 为了承载视频层 === */
 .dashboard-container {
+  position: relative; /* 必需：让视频在容器下方 */
   width: 100vw;
   height: 100vh;
-  background-color: #0b1325;
-  background-image:
-    radial-gradient(circle at 50% 50%, #1c2e4a 0%, #0b1325 60%),
-    linear-gradient(rgba(66, 227, 164, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(66, 227, 164, 0.03) 1px, transparent 1px);
-  background-size:
-    100% 100%,
-    20px 20px,
-    20px 20px;
   color: #fff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* 视频背景定位（从第一段复制） */
+.video-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1; /* 保证在所有内容之下 */
+  pointer-events: none;
+  filter: brightness(1) contrast(1.1) saturate(1.1) hue-rotate(5deg);
+  opacity: 0.95;
+  animation: video-pulse 20s ease-in-out infinite;
+}
+
+/* 独立的视频遮罩层 */
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 19, 37, 0.3) 0%,
+    rgba(11, 19, 37, 0.5) 50%,
+    rgba(11, 19, 37, 0.7) 100%
+  );
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(28, 46, 74, 0.5) 0%, rgba(11, 19, 37, 0.5) 60%),
+    linear-gradient(rgba(66, 227, 164, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(66, 227, 164, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 20px 20px, 20px 20px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes video-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+/* 响应式设计：确保视频在不同屏幕尺寸下的良好表现 */
+@media (max-width: 768px) {
+  .video-background {
+    /* 在小屏幕上保持视频的正确比例和覆盖 */
+    object-fit: cover;
+    min-width: 100%;
+    min-height: 100%;
+  }
+}
+
+@media (max-height: 480px) {
+  .video-background {
+    /* 在小高度屏幕上调整视频显示 */
+    object-fit: cover;
+    min-width: 100%;
+    min-height: 100%;
+  }
 }
 
 /* === Header === */
@@ -225,6 +297,7 @@ body {
     center bottom;
   background-size: 100% 100%;
   border-bottom: 2px solid #42e3a4;
+  z-index: 10;
 }
 
 .header-center {
@@ -358,6 +431,7 @@ body {
   gap: 15px;
   padding: 15px;
   min-height: 0;
+  z-index: 10; /* 保证主内容在视频之上 */
 }
 
 .column {
@@ -380,7 +454,7 @@ body {
 
 /* 四角装饰 */
 .card::before {
-  content: '';
+  content: ''; 
   position: absolute;
   top: -1px;
   left: -1px;
@@ -422,12 +496,8 @@ body {
 }
 
 /* === 左侧栏布局 === */
-.box-gauge {
-  flex: 1;
-}
-.box-line {
-  flex: 1;
-}
+.box-gauge { flex: 1; }
+.box-line { flex: 1; }
 
 /* === 中间栏布局 === */
 .map-container {
@@ -436,107 +506,24 @@ body {
   border: 1px solid rgba(66, 227, 164, 0.3);
   background: radial-gradient(circle, rgba(0, 30, 60, 0.8), rgba(0, 0, 0, 0));
 }
-.mock-map {
-  width: 100%;
-  height: 100%;
-}
+.mock-map { width: 100%; height: 100%; }
 
-.center-bottom {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.box-analysis {
-  flex: 1;
-  height: 100%;
-}
+.center-bottom { flex: 1; display: flex; flex-direction: column; }
+.box-analysis { flex: 1; height: 100%; }
 
 /* === 右侧栏布局 (优化后) === */
-.box-radar {
-  flex: 6; /* 雷达图占 40% 高度 */
-  min-height: 0;
-}
+.box-radar { flex: 6; min-height: 0; }
+.box-cctv { flex: 4; min-height: 0; }
 
-.box-cctv {
-  flex: 4; /* 监控占 60% 高度 */
-  min-height: 0;
-}
+/* 监控网格等 */
+.cctv-grid { width: 100%; height: 100%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; padding: 5px; }
+.warning-container { width: 100%; height: 100%; }
+.screen-placeholder { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(66, 227, 164, 0.3); color: rgba(66, 227, 164, 0.5); font-family: monospace; position: relative; box-shadow: inset 0 0 15px rgba(66, 227, 164, 0.05); transition: all 0.3s; }
 
-/* 图表容器 */
-.chart-container {
-  width: 100%;
-  height: 100%;
-}
+.screen-placeholder:hover { border-color: #42e3a4; box-shadow: 0 0 10px rgba(66, 227, 164, 0.2); }
 
-/* 监控网格 */
-.cctv-grid {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 10px;
-  padding: 5px;
-}
+.rec-dot { position: absolute; top: 5px; left: 5px; font-size: 10px; color: #ff3b3b; font-weight: bold; animation: blink 1s infinite; text-shadow: 0 0 5px red; }
+.cam-label { text-align: center; font-size: 10px; color: rgba(255, 255, 255, 0.4); white-space: nowrap; }
 
-.warning-container {
-  width: 100%;
-  height: 100%;
-}
-
-.cctv-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
-}
-
-.screen-placeholder {
-  flex: 1;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(66, 227, 164, 0.3);
-  color: rgba(66, 227, 164, 0.5);
-  font-family: monospace;
-  position: relative;
-  box-shadow: inset 0 0 15px rgba(66, 227, 164, 0.05);
-  transition: all 0.3s;
-}
-
-.screen-placeholder:hover {
-  border-color: #42e3a4;
-  box-shadow: 0 0 10px rgba(66, 227, 164, 0.2);
-}
-
-.rec-dot {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  font-size: 10px;
-  color: #ff3b3b;
-  font-weight: bold;
-  animation: blink 1s infinite;
-  text-shadow: 0 0 5px red;
-}
-
-.cam-label {
-  text-align: center;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
-  white-space: nowrap;
-}
-
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 </style>
-
-

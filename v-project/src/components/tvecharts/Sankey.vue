@@ -1,5 +1,5 @@
 <template>
-  <div class="sankey-container tech-bg">
+  <div class="sankey-container">
     <div class="sankey-chart" ref="sankeyChart"></div>
   </div>
 </template>
@@ -7,6 +7,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
+// 注意：请确保这些路径在你项目中是正确的
 import { calendar } from '../../api/requestFuntion.js'
 import { mapLocation, mapProduct } from '../../stores/store.js'
 import { ElMessage } from 'element-plus'
@@ -20,14 +21,9 @@ const queryData = {
   province: mapLocationStore.currentProvince,
 }
 
-// --- 1. 现代化配色方案：采用同色系梯度，减少视觉杂乱 ---
+// 配色保持不变，高亮色在深色视频背景上会很好看
 const techColorPalette = [
-  '#00f2ff', // 主亮青
-  '#009dff', // 科技蓝
-  '#4e77ff', // 靛蓝
-  '#a855f7', // 优雅紫
-  '#22d3ee', // 淡青
-  '#818cf8', // 浅靛蓝
+  '#00f2ff', '#009dff', '#4e77ff', '#a855f7', '#22d3ee', '#818cf8'
 ];
 
 const getUniqueColor = (index) => {
@@ -35,7 +31,8 @@ const getUniqueColor = (index) => {
 }
 
 const option = {
-  backgroundColor: 'transparent', // 背景交给CSS处理，更具通透感
+  // 【关键修改 1】确保 ECharts 画布完全透明
+  backgroundColor: 'rgba(0,0,0,0)', 
   series: [
     {
       type: 'sankey',
@@ -43,47 +40,51 @@ const option = {
       right: '18%', 
       top: '8%',
       bottom: '8%',
-      nodeWidth: 12, // 【关键修改】减窄节点宽度，更显精致，不笨重
-      nodeGap: 18,   // 适当的间距
+      nodeWidth: 10, // 稍微再变细一点，让背景露出来更多
+      nodeGap: 18,
       draggable: false,
       layoutIterations: 32,
       data: [],
       links: [],
-      // 优化线条：低透明度、更平滑的曲线
       lineStyle: {
         color: 'source',
         curveness: 0.5,
-        opacity: 0.25, // 【关键修改】大幅降低初始透明度，现代感的秘诀
+        // 【关键修改 2】稍微提高一点透明度，防止线条太淡在视频上看不清
+        // 如果视频很花，可以设为 0.4；如果视频很暗，0.25 也可以
+        opacity: 0.4, 
       },
-      // 优化节点：去掉厚重的发光，改用轻薄的边框
       itemStyle: {
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
+        borderColor: 'rgba(255,255,255,0.6)', // 增强一点边框亮度
+        color: 'transparent' // 尝试让节点本身半透明（可选），这里先保持原色
       },
-      // 优化标签：更清爽的排版
       label: {
-        color: '#a5f3fc',
+        color: '#fff', // 纯白字在视频上最清晰
         fontFamily: 'Microsoft YaHei',
-        fontSize: 12,
-        fontWeight: 400,
-        distance: 10
+        fontSize: 13, // 稍微加大一点字体
+        fontWeight: 500, // 加粗一点
+        distance: 12,
+        // 添加文字阴影，防止视频背景太亮导致文字看不清
+        textShadowColor: 'rgba(0,0,0,0.8)',
+        textShadowBlur: 3,
+        textShadowOffsetX: 1,
+        textShadowOffsetY: 1
       },
       emphasis: {
         focus: 'adjacency',
-        lineStyle: {
-          opacity: 0.7, // 鼠标悬停时才加亮
-        },
+        lineStyle: { opacity: 0.8 },
         itemStyle: {
-          shadowBlur: 10,
-          shadowColor: '#00f2ff',
+          shadowBlur: 20,
+          shadowColor: '#ffffff'
         }
       },
     },
   ],
   tooltip: {
     trigger: 'item',
-    backgroundColor: 'rgba(7, 26, 55, 0.9)',
-    borderColor: '#22d3ee',
+    // Tooltip 保持半透明深色背景，不受影响
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderColor: '#00f2ff',
     borderWidth: 1,
     textStyle: { color: '#fff' },
     formatter: (params) => {
@@ -92,8 +93,8 @@ const option = {
       }
       return `
         <div style="padding:5px;">
-          <span style="color:#94a3b8">流向：</span>${params.data.source} ➜ ${params.data.target}<br/>
-          <span style="color:#22d3ee">交易量：</span><b style="font-size:1.1em">${params.data.value}</b> 吨
+          <span style="color:#cbd5e1">流向：</span>${params.data.source} ➜ ${params.data.target}<br/>
+          <span style="color:#00f2ff">交易量：</span><b style="font-size:1.1em">${params.data.value}</b> 吨
         </div>
       `
     },
@@ -105,19 +106,15 @@ const transformToSankeyData = (rawData) => {
   const nodeMap = new Map()
   const links = []
   const linkMap = new Map()
-
   let colorIndex = 0;
 
   const addNode = (name, level) => {
     if (!nodeMap.has(name)) {
       const color = getUniqueColor(colorIndex++);
       let labelConfig = { position: 'right' };
-      
-      // 第1层居左显示，第2层和第3层居右显示，避免文字重叠
       if (level === 0) {
         labelConfig = { position: 'left', distance: 15 };
       }
-
       nodes.push({
         name: name,
         itemStyle: { color: color },
@@ -198,20 +195,23 @@ onUnmounted(() => { if (myChart) myChart.dispose() })
 </script>
 
 <style scoped>
+/* 【重点修改样式】 
+  1. 移除背景颜色 background
+  2. 移除 backdrop-filter 模糊效果
+*/
 .sankey-container {
   width: 100%;
   height: 100%;
   min-height: 400px;
-  background: #020617; /* 更深邃的底色 */
+  
+  /* 设为完全透明，让父组件视频透出来 */
+  background: transparent; 
+  
+  /* 移除模糊，否则视频会变糊 */
+  backdrop-filter: none; 
+  
   overflow: hidden;
-}
-
-/* 装饰背景：微弱的网格感 */
-.tech-bg {
-  background-image: 
-    linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 30px 30px;
+  position: relative; /* 确保层级正确 */
 }
 
 .sankey-chart {
