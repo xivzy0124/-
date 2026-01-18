@@ -42,8 +42,8 @@ const fetchYearlyData = async () => {
   if (myChart) {
     myChart.showLoading({
       text: '数据加载中...',
-      color: '#45d0b2',
-      textColor: '#45d0b2',
+      color: '#3ba1ff', // Loading 也改为蓝色配合
+      textColor: '#3ba1ff',
       maskColor: 'rgba(10, 30, 60, 0.2)',
       zlevel: 0
     })
@@ -52,6 +52,7 @@ const fetchYearlyData = async () => {
   try {
     let rawData = []
     
+    // 模拟数据逻辑保持不变
     if (provinceName.value === '河南省' && productName.value === '大白菜') {
       const currentYear = new Date().getFullYear()
       for (let i = 0; i < 10; i++) {
@@ -137,9 +138,12 @@ const option = {
   tooltip: {
     trigger: 'axis',
     backgroundColor: 'rgba(10, 30, 60, 0.95)',
-    borderColor: '#45d0b2',
+    borderColor: '#3ba1ff', // Tooltip边框改为蓝色
     textStyle: { color: '#fff' },
-    axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(69, 208, 178, 0.1)' } }
+    axisPointer: { 
+      type: 'shadow', 
+      shadowStyle: { color: 'rgba(59, 161, 255, 0.1)' } // 阴影改为淡蓝
+    }
   },
   dataZoom: [
     {
@@ -147,8 +151,10 @@ const option = {
       show: true,
       height: 12,
       bottom: 5,
-      borderColor: 'rgba(69, 208, 178, 0.3)',
-      handleStyle: { color: '#45d0b2' },
+      // 这里的颜色微调，让它不那么抢眼
+      borderColor: 'rgba(59, 161, 255, 0.2)', 
+      handleStyle: { color: '#3ba1ff' },
+      fillerColor: 'rgba(59, 161, 255, 0.2)',
       textStyle: { color: '#fff' },
       brushSelect: false
     },
@@ -162,7 +168,7 @@ const option = {
   xAxis: {
     type: 'category',
     data: [],
-    axisLine: { lineStyle: { color: 'rgba(69, 208, 178, 0.5)' } },
+    axisLine: { lineStyle: { color: 'rgba(59, 161, 255, 0.5)' } }, // 轴线改为蓝色
     axisLabel: { color: '#fff', fontSize: 11 },
     axisTick: { alignWithLabel: true }
   },
@@ -170,7 +176,7 @@ const option = {
     type: 'value',
     name: '元/公斤',
     nameTextStyle: { color: '#fff', padding: [0, 0, 0, 10] },
-    splitLine: { lineStyle: { color: 'rgba(69, 208, 178, 0.1)', type: 'dashed' } },
+    splitLine: { lineStyle: { color: 'rgba(59, 161, 255, 0.1)', type: 'dashed' } }, // 分割线改为淡蓝
     axisLabel: { color: '#fff' }
   },
   series: [
@@ -180,9 +186,10 @@ const option = {
       barMaxWidth: 30,
       data: [],
       itemStyle: {
+        // --- 修改 1：柱状图使用科技蓝渐变，与折线区分 ---
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(69, 208, 178, 0.9)' },
-          { offset: 1, color: 'rgba(38, 162, 147, 0.1)' }
+          { offset: 0, color: '#3ba1ff' }, // 顶部亮蓝
+          { offset: 1, color: 'rgba(59, 161, 255, 0.05)' } // 底部透明
         ]),
         borderRadius: [3, 3, 0, 0]
       }
@@ -194,8 +201,18 @@ const option = {
       symbol: 'circle',
       symbolSize: 8,
       data: [],
-      itemStyle: { color: '#45d0b2', borderColor: '#fff', borderWidth: 1 },
-      lineStyle: { width: 3, shadowBlur: 10, shadowColor: 'rgba(69, 208, 178, 0.5)' }
+      // --- 修改 2：折线图保留高亮的青绿色，在蓝色背景上更突出 ---
+      itemStyle: { 
+        color: '#a855f7', 
+        borderColor: '#fff', 
+        borderWidth: 1 
+      },
+      lineStyle: { 
+        width: 3, 
+        color: '#a855f7', // 显式指定线条颜色
+        shadowBlur: 10, 
+        shadowColor: 'rgba(168, 85, 247, 0.6)' // 绿色光晕
+      }
     }
   ]
 }
@@ -208,8 +225,7 @@ const updateChart = () => {
   option.series[0].data = data.map(item => parseFloat(item.averagePrice).toFixed(2))
   option.series[1].data = data.map(item => parseFloat(item.avgMaxPrice).toFixed(2))
 
-  // 2. 初始化 DataZoom 位置
-  // 总是从 0 开始
+  // 初始化 DataZoom 位置
   option.dataZoom[0].startValue = 0
   option.dataZoom[0].endValue = Math.min(DISPLAY_COUNT - 1, data.length - 1)
   option.dataZoom[1].startValue = 0
@@ -236,15 +252,11 @@ const startAutoPlay = () => {
   autoTimer.value = setInterval(() => {
     if (!myChart) return
 
-    // 这一步：向右移动一格
+    // 向右移动一格
     currentStart++
 
-    // 检测是否到达了“替身区”的边界
-    // 当 currentStart 等于真实数据长度时，说明视图里的第一根柱子已经是“假替身”了
-    // 且这个“假替身”和索引为0的“真身”一模一样
     if (currentStart === realDataLength) {
-      // 【关键操作】：瞬间瞬移回 0
-      // setOption 中 animation: false 可以禁止过渡动画，实现“隐身传送”
+      // 瞬间瞬移回 0
       myChart.setOption({
         dataZoom: [
           { startValue: 0, endValue: DISPLAY_COUNT - 1 },
@@ -255,8 +267,6 @@ const startAutoPlay = () => {
         animation: false   // 禁止动画，实现无缝
       })
       
-      // 传送回 0 后，我们实际上想看的是 0 的下一位（即 1）
-      // 所以把起始点设为 1，然后用动画滑过去
       currentStart = 1
     }
 
@@ -266,14 +276,11 @@ const startAutoPlay = () => {
       startValue: currentStart,
       endValue: currentStart + (DISPLAY_COUNT - 1)
     })
-    
-    // 可选：高亮中间柱子
-    const centerIndex = Math.floor(currentStart + (DISPLAY_COUNT / 2))
 
   }, 2000) // 2秒滚动一次
 }
 
-// 静态数据时的轮播逻辑（无需修改）
+// 静态数据时的轮播逻辑
 const runStaticCarousel = () => {
   currentIndex.value = -1
   autoTimer.value = setInterval(() => {

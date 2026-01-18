@@ -138,7 +138,7 @@
               <p class="report-text">
                 基于 <span class="highlight">{{ predictionData.province }}</span> 历史数据，
                 预计未来一周 <span class="highlight">{{ predictionData.product }}</span> 价格
-                <span :class="predictionData.trendClass === 'trend-up' ? 'text-red' : 'text-green'">
+                <span :class="predictionData.trendClass === 'trend-up' ? 'text-red' : 'text-cyan'">
                   {{ predictionData.trend === '上升' ? '震荡上行' : '波动回落' }}
                 </span>。
               </p>
@@ -162,7 +162,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { mapLocation, mapProduct } from '../../stores/store.js'
+import { mapLocation, mapProduct, pricePredictionCache } from '../../stores/store.js'
 
 const mapLocationStore = mapLocation()
 const mapProductStore = mapProduct()
@@ -177,6 +177,30 @@ watch(() => mapLocationStore.currentProvince, (newVal) => {
   }
 })
 
+// 监听产品变化，自动重置
+watch(() => mapProductStore.currentProduct, (newVal) => {
+  if (newVal) {
+    resetPrediction()
+  }
+})
+
+// 监听缓存变化，更新显示
+watch(() => pricePredictionCache().cache, () => {
+  if (showResults.value) {
+    const province = mapLocationStore.currentProvince || '河南省'
+    const city = mapLocationStore.currentCity || '郑州市'
+    const district = mapLocationStore.currentDistrict || '中原区'
+    const product = mapProductStore.currentProduct || '大白菜'
+    
+    const cacheStore = pricePredictionCache()
+    const cachedData = cacheStore.getCache(province, city, district, product)
+    
+    if (cachedData) {
+      predictionData.value = cachedData
+    }
+  }
+}, { deep: true })
+
 const getRandomDuration = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -185,7 +209,7 @@ const tasks = ref([
   { name: '定位区域信息', status: 'pending', duration: 0 },
   { name: '获取气象数据', status: 'pending', duration: 0 },
   { name: '加载历史价格', status: 'pending', duration: 0 },
-  { name: '构建预测模型', status: 'pending', duration: 0 },
+  { name: '加载预测模型', status: 'pending', duration: 0 },
   { name: '生成策略建议', status: 'pending', duration: 0 }
 ])
 
@@ -205,57 +229,43 @@ onMounted(() => {
   startLoadingSequence()
 })
 
-// ==== 核心修改：控制执行顺序 ====
 const startLoadingSequence = async () => {
-  // 1. 初始化：设置动态名称和重置状态
   const currentCity = mapLocationStore.currentProvince || '定位中...'
   tasks.value[0].name = `定位区域信息: ${currentCity}`
   generatePredictionData()
 
-  // 重置所有任务状态
   tasks.value.forEach(t => t.status = 'pending')
 
-  // 2. 配置前4个任务的时间 (并行任务)
   const parallelConfigs = [
-    { min: 1200, max: 1800 }, // Task 0
-    { min: 2200, max: 3500 }, // Task 1
-    { min: 1500, max: 2500 }, // Task 2
-    { min: 3500, max: 5000 }  // Task 3: 模型计算
+    { min: 1200, max: 1800 }, 
+    { min: 2200, max: 3500 }, 
+    { min: 1500, max: 2500 }, 
+    { min: 3500, max: 5000 }  
   ]
 
-  // 3. 定义执行单个任务的函数（返回 Promise）
   const runTask = (index, durationObj, delay = 0) => {
     return new Promise((resolve) => {
-      // 设置该任务的持续时间
       const duration = getRandomDuration(durationObj.min, durationObj.max)
       tasks.value[index].duration = duration
       
       setTimeout(() => {
         tasks.value[index].status = 'loading'
-        
         setTimeout(() => {
           tasks.value[index].status = 'done'
-          resolve() // 任务完成，通知 Promise
+          resolve() 
         }, duration)
-        
-      }, delay) // 启动延迟
+      }, delay) 
     })
   }
 
-  // 4. 【第一阶段】并行执行前4个任务 (Index 0-3)
-  // 使用 Promise.all 等待它们全部完成
-  // 这里的 delay (index * 200) 是为了保留视觉上的“错峰”启动效果，而不是完全同时闪烁
   const firstBatch = parallelConfigs.map((config, i) => 
     runTask(i, config, i * 200 + getRandomDuration(0, 200))
   )
 
   await Promise.all(firstBatch)
-
-  // 5. 【第二阶段】前4个都做完了，才开始第5个 (Index 4)
-  // 稍微停顿一下(300ms)，让用户意识到前置工作已完成
   await new Promise(r => setTimeout(r, 300))
 
-  const finalTaskConfig = { min: 1500, max: 2500 } // 策略生成时间
+  const finalTaskConfig = { min: 1500, max: 2500 } 
   await runTask(4, finalTaskConfig, 0)
 }
 
@@ -269,7 +279,6 @@ const resetPrediction = () => {
   displayStep.value = 0
   detailIndex.value = -1
   timelineIndex.value = -1
-  // 重新开始序列
   startLoadingSequence()
 }
 
@@ -300,11 +309,25 @@ const streamDisplayResults = async () => {
 
 const generatePredictionData = () => {
   const province = mapLocationStore.currentProvince || '河南省'
+  const city = mapLocationStore.currentCity || '郑州市'
+  const district = mapLocationStore.currentDistrict || '中原区'
   const product = mapProductStore.currentProduct || '大白菜'
+  
+  const cacheStore = pricePredictionCache()
+  
+  const cacheKey = cacheStore.generateCacheKey(province, city, district, product)
+  const cachedData = cacheStore.getCache(province, city, district, product)
+  
+  if (cachedData) {
+    predictionData.value = cachedData
+    return
+  }
   
   let basePriceVal = 0
   if (province === '河南省' && product === '大白菜') basePriceVal = 1.5 + Math.random() * 1.5
   else if (province === '河南省' && product === '黄瓜') basePriceVal = 5.5 + Math.random() * 2.5
+  else if (province === '四川省' && product === '黄瓜') basePriceVal = 7 + Math.random() * 2
+  else if (province === '四川省' && product === '大白菜') basePriceVal = 2 + Math.random() * 1
   else basePriceVal = Math.random() * 3 + 1
   
   const basePrice = basePriceVal.toFixed(2)
@@ -344,6 +367,8 @@ const generatePredictionData = () => {
     ],
     timeline
   }
+  
+  cacheStore.setCache(province, city, district, product, predictionData.value)
 }
 </script>
 
@@ -361,29 +386,25 @@ const generatePredictionData = () => {
   width: 100%;
   height: 100%;
   position: relative;
-  
-  /* --- 关键修改：大幅增加透明度 --- */
-  /* 旧值: rgba(11, 19, 37, 0.95) */
-  background: rgba(11, 19, 37, 0.35); 
-  
-  /* --- 关键修改：减小模糊度，让视频轮廓更清晰 --- */
-  /* 旧值: blur(10px) */
-  backdrop-filter: blur(3px); 
-  
-  border: 1px solid rgba(66, 227, 164, 0.15); /* 稍微增强边框亮度以界定边界 */
+  /* 背景：深蓝灰，统一色调 
+    rgba(2, 12, 20, 0.4) -> 与雷达图/折线图一致
+  */
+  background: rgba(2, 12, 20, 0.4); 
+  backdrop-filter: blur(4px); 
+  border: 1px solid rgba(0, 242, 255, 0.15); /* 边框改为青色微光 */
   border-radius: 4px; 
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* 阴影调淡 */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
 }
 
-/* ================= 科技感断开式边框 ================= */
+/* ================= 科技感断开式边框：改为青色 ================= */
 .corner {
   position: absolute; width: 15px; height: 15px;
-  border: 2px solid #42e3a4;
+  border: 2px solid #00f2ff; /* 青色高亮 */
   transition: all 0.5s ease;
   z-index: 10;
-  box-shadow: 0 0 5px rgba(66, 227, 164, 0.6);
+  box-shadow: 0 0 5px rgba(0, 242, 255, 0.6);
 }
 .top-left { top: -1px; left: -1px; border-right: none; border-bottom: none; }
 .top-right { top: -1px; right: -1px; border-left: none; border-bottom: none; }
@@ -394,15 +415,14 @@ const generatePredictionData = () => {
 .panel-header {
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 15px;
-  /* 头部背景也变得更透明 */
-  background: linear-gradient(90deg, transparent, rgba(66, 227, 164, 0.1), transparent);
-  border-bottom: 1px solid rgba(66, 227, 164, 0.1);
+  background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.1), transparent);
+  border-bottom: 1px solid rgba(0, 242, 255, 0.1);
   flex-shrink: 0;
   min-height: 36px;
 }
 
-.close-btn { background: transparent; border: none; color: #42e3a4; font-size: 16px; cursor: pointer; opacity: 0.8; }
-.close-btn:hover { opacity: 1; transform: scale(1.1); }
+.close-btn { background: transparent; border: none; color: #00f2ff; font-size: 16px; cursor: pointer; opacity: 0.8; }
+.close-btn:hover { opacity: 1; transform: scale(1.1); text-shadow: 0 0 8px rgba(0, 242, 255, 0.6); }
 
 /* ================= 内容区 ================= */
 .panel-content {
@@ -428,65 +448,65 @@ const generatePredictionData = () => {
 }
 .timeline-line {
   position: absolute; left: 19px; top: 20px; bottom: 20px; width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(66, 227, 164, 0.2) 20%, rgba(66, 227, 164, 0.2) 80%, transparent);
+  /* 进度线：青蓝渐变 */
+  background: linear-gradient(180deg, transparent, rgba(0, 157, 255, 0.3) 20%, rgba(0, 242, 255, 0.3) 80%, transparent);
 }
 .task-item {
   display: flex; align-items: center; padding: 14px 10px; position: relative;
   border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
 }
 .task-item:last-child { border-bottom: none; }
-.task-item.loading { background: linear-gradient(90deg, rgba(66, 227, 164, 0.1) 0%, transparent 80%); }
+/* Loading 背景条改为蓝色系 */
+.task-item.loading { background: linear-gradient(90deg, rgba(0, 242, 255, 0.1) 0%, transparent 80%); }
 
 .task-status-wrapper { width: 40px; position: relative; z-index: 1; display: flex; justify-content: center; }
 .task-icon {
   width: 20px; height: 20px; display: flex; justify-content: center; align-items: center;
-  /* 图标背景设为半透明黑，避免被背景杂色干扰 */
-  background: rgba(11, 19, 37, 0.6); 
+  background: rgba(11, 19, 37, 0.8); 
   border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
 }
-.task-item.loading .task-icon { border-color: #42e3a4; box-shadow: 0 0 8px rgba(66,227,164,0.4); }
+.task-item.loading .task-icon { border-color: #00f2ff; box-shadow: 0 0 8px rgba(0, 242, 255, 0.4); }
 .icon-dot { width: 4px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 50%; }
-.icon-check { color: #42e3a4; font-size: 10px; }
-.icon-spinner { width: 10px; height: 10px; border: 2px solid rgba(66,227,164,0.3); border-top-color: #42e3a4; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.icon-check { color: #00f2ff; font-size: 10px; }
+.icon-spinner { width: 10px; height: 10px; border: 2px solid rgba(0, 242, 255, 0.3); border-top-color: #00f2ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
-/* 增加文字阴影，防止背景视频太亮导致看不清字 */
 .task-info { flex: 1; display: flex; align-items: center; gap: 12px; margin-left: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .task-index { font-family: 'Courier New', monospace; font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-right: 8px; }
-.task-item.loading .task-index, .task-item.done .task-index { color: #42e3a4; }
+.task-item.loading .task-index, .task-item.done .task-index { color: #00f2ff; }
 .task-name { font-size: 14px; color: rgba(255, 255, 255, 0.8); }
 .task-item.done .task-name { color: #fff; font-weight: 500; }
 
 .task-meta { text-align: right; min-width: 60px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-.time-cost { font-family: 'Courier New', monospace; font-size: 11px; color: #42e3a4; opacity: 1; }
-.processing-dots { color: rgba(66,227,164,0.6); font-size: 12px; animation: pulse 1s infinite; }
+.time-cost { font-family: 'Courier New', monospace; font-size: 11px; color: #00f2ff; opacity: 1; }
+.processing-dots { color: rgba(0, 242, 255, 0.6); font-size: 12px; animation: pulse 1s infinite; }
 .fade-in-text { animation: fadeIn 0.5s ease; }
-.item-progress-line { position: absolute; bottom: 0; left: 0; height: 1px; background: #42e3a4; transition: width 0.4s ease; opacity: 0.5; }
+.item-progress-line { position: absolute; bottom: 0; left: 0; height: 1px; background: #00f2ff; transition: width 0.4s ease; opacity: 0.5; }
 
 .action-area {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 90px;
-  /* 底部渐变也调淡 */
   background: linear-gradient(180deg, transparent 0%, rgba(11,19,37,0.5) 100%);
   margin-top: auto;
 }
 .liquid-btn {
   position: relative; border: none; outline: none;
-  background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
+  background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(5px);
   width: 200px; height: 44px; border-radius: 22px;
   cursor: pointer; overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   display: flex; justify-content: center; align-items: center;
 }
 .liquid-btn::before {
   content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(90deg, #42e3a4, #2ecc71);
+  /* 按钮渐变：青色 -> 天蓝 */
+  background: linear-gradient(90deg, #00f2ff, #009dff);
   opacity: 0.7; z-index: 0; transform: scaleX(0); transform-origin: left;
   transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
 }
 .liquid-btn:hover::before { transform: scaleX(1); }
-.btn-content { position: relative; z-index: 2; color: #fff; font-size: 14px; font-weight: 500; letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.btn-content { position: relative; z-index: 2; color: #00f2ff; font-size: 14px; font-weight: 500; letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
 .liquid-btn:hover .btn-content { color: #0b1325; text-shadow: none; font-weight: bold; }
 .shine { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: skewX(-20deg); }
 .liquid-btn:hover .shine { left: 200%; transition: 0.8s ease-in-out; }
@@ -497,54 +517,53 @@ const generatePredictionData = () => {
   padding: 5px 15px 15px 15px; 
 }
 
-/* 结果卡片背景调低透明度 */
-.result-info { display: flex; gap: 10px; margin-bottom: 12px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; border: 1px solid rgba(66, 227, 164, 0.15); }
+.result-info { display: flex; gap: 10px; margin-bottom: 12px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; border: 1px solid rgba(0, 242, 255, 0.15); }
 .info-item { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .info-label { font-size: 11px; color: rgba(255, 255, 255, 0.6); }
 .info-value { font-size: 13px; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
 
 .prediction-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-.metric-card { padding: 8px 5px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(66, 227, 164, 0.15); border-radius: 6px; text-align: center; }
+.metric-card { padding: 8px 5px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(0, 242, 255, 0.15); border-radius: 6px; text-align: center; }
 .metric-label { font-size: 10px; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px; }
-.metric-value { font-size: 16px; font-weight: bold; color: #42e3a4; text-shadow: 0 0 10px rgba(66,227,164,0.3); }
-.metric-value.trend-up { color: #ff6b6b; text-shadow: 0 0 10px rgba(255,107,107,0.3); }
-.metric-value.trend-down { color: #69f0ae; text-shadow: 0 0 10px rgba(105,240,174,0.3); }
+.metric-value { font-size: 16px; font-weight: bold; color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
+.metric-value.trend-up { color: #ff4d4f; text-shadow: 0 0 10px rgba(255, 77, 79, 0.3); } /* 上升用红色 */
+.metric-value.trend-down { color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.3); } /* 下降用本色（青色） */
 .metric-unit { font-size: 9px; color: rgba(255, 255, 255, 0.5); }
 
 .prediction-details { margin-bottom: 12px; }
-.detail-title { font-size: 12px; font-weight: bold; color: #42e3a4; margin-bottom: 8px; border-left: 2px solid #42e3a4; padding-left: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+.detail-title { font-size: 12px; font-weight: bold; color: #00f2ff; margin-bottom: 8px; border-left: 2px solid #00f2ff; padding-left: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .detail-content { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .detail-item { display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
 .detail-label { font-size: 11px; color: rgba(255,255,255,0.7); }
 .detail-value { font-size: 11px; font-weight: bold; color: #fff; }
-.detail-value.action-buy { color: #ff6b6b; }
-.detail-value.action-wait { color: #69f0ae; }
+.detail-value.action-buy { color: #ff4d4f; }
+.detail-value.action-wait { color: #00f2ff; }
 
-.prediction-timeline { margin-bottom: 12px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid rgba(66, 227, 164, 0.15); }
-.timeline-title { font-size: 12px; font-weight: bold; color: #42e3a4; margin-bottom: 10px; border-left: 2px solid #42e3a4; padding-left: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+.prediction-timeline { margin-bottom: 12px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.15); }
+.timeline-title { font-size: 12px; font-weight: bold; color: #00f2ff; margin-bottom: 10px; border-left: 2px solid #00f2ff; padding-left: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .timeline-chart { display: flex; justify-content: space-between; align-items: flex-end; height: 100px; padding-top: 10px; width: 100%; }
 .timeline-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; position: relative; }
 .timeline-bar-wrapper { width: 100%; display: flex; justify-content: center; align-items: flex-end; transition: height 0.5s ease; min-height: 4px; }
-.timeline-bar { width: 40%; max-width: 20px; min-width: 6px; height: 100%; background: linear-gradient(180deg, #42e3a4 0%, rgba(66, 227, 164, 0.2) 100%); border-radius: 4px 4px 0 0; }
-.timeline-item .timeline-price { font-size: 10px; color: #42e3a4; margin-bottom: 2px; transform: scale(0.9); white-space: nowrap; font-weight: bold; text-shadow: 0 1px 1px rgba(0,0,0,0.8); }
+/* 柱状图：青色 -> 透明渐变 */
+.timeline-bar { width: 40%; max-width: 20px; min-width: 6px; height: 100%; background: linear-gradient(180deg, #00f2ff 0%, rgba(0, 242, 255, 0.1) 100%); border-radius: 4px 4px 0 0; }
+.timeline-item .timeline-price { font-size: 10px; color: #00f2ff; margin-bottom: 2px; transform: scale(0.9); white-space: nowrap; font-weight: bold; text-shadow: 0 1px 1px rgba(0,0,0,0.8); }
 .timeline-label { margin-top: 6px; font-size: 10px; color: rgba(255, 255, 255, 0.6); transform: scale(0.9); white-space: nowrap; }
 
 .prediction-report { 
-  /* 报告区也更透明 */
-  background: linear-gradient(135deg, rgba(66, 227, 164, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%); 
-  border: 1px solid rgba(66, 227, 164, 0.2); 
+  background: linear-gradient(135deg, rgba(0, 242, 255, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%); 
+  border: 1px solid rgba(0, 242, 255, 0.2); 
   border-radius: 8px; 
   padding: 10px; 
   position: relative; 
   overflow: hidden; 
 }
-.prediction-report::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #42e3a4; }
-.report-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #42e3a4; font-size: 13px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+.prediction-report::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #00f2ff; }
+.report-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #00f2ff; font-size: 13px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .report-text { font-size: 12px; line-height: 1.5; color: rgba(255, 255, 255, 0.9); text-align: justify; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .mt-2 { margin-top: 6px; }
-.highlight { color: #fff; font-weight: bold; background: rgba(66, 227, 164, 0.2); padding: 0 4px; border-radius: 2px; }
-.text-red { color: #ff6b6b; }
-.text-green { color: #69f0ae; }
+.highlight { color: #fff; font-weight: bold; background: rgba(0, 242, 255, 0.2); padding: 0 4px; border-radius: 2px; }
+.text-red { color: #ff4d4f; }
+.text-cyan { color: #00f2ff; }
 .report-footer { margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255, 255, 255, 0.15); display: flex; justify-content: space-between; font-size: 10px; color: rgba(255, 255, 255, 0.5); font-family: monospace; }
 
 /* 动画定义保持不变 */

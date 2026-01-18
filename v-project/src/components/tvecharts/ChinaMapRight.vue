@@ -1,7 +1,5 @@
 <template>
   <div class="side-decor right-panel">
-    <div class="panel-title">农产品交易量监测</div>
-
     <div class="selector-section">
       <div class="selector-label">选择监测品种</div>
       <div class="tech-select-wrapper">
@@ -9,7 +7,7 @@
           v-model="selectedProduct"
           placeholder="请选择农产品"
           filterable
-          popper-class="tech-select-dropdown-green"
+          popper-class="tech-select-dropdown-blue" 
           class="tech-select"
           @change="handleProductChange"
         >
@@ -37,7 +35,7 @@
     <div class="divider-line"></div>
 
     <div class="price-ranking-section">
-      <div class="section-title">未来5天价格预测</div>
+      <div class="section-title">未来7天价格预测</div>
       <div class="ranking-list">
         <div
           v-for="(item, index) in provincePriceRanking"
@@ -50,21 +48,11 @@
             <span class="price-unit">元/斤</span>
           </div>
           <div class="probability-badge">
-            <span class="probability-value">{{ (item.probability * 100).toFixed(0) }}%</span>
+             <span class="probability-value">{{ (item.probability * 100).toFixed(0) }}%</span>
             <span class="probability-label">概率</span>
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="divider-line"></div>
-
-    <div class="weather-monitor">
-      <slot name="content"></slot>
-    </div>
-
-    <div class="v-ruler">
-      <span v-for="i in 8" :key="i" class="tick"></span>
     </div>
   </div>
 </template>
@@ -72,7 +60,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { getAllVaegettableTypes } from '../../api/requestFuntion.js'
-import { mapProduct, mapLocation } from '../../stores/store.js'
+import { mapProduct, mapLocation, pricePredictionCache } from '../../stores/store.js'
 
 const emit = defineEmits(['product-change'])
 
@@ -81,88 +69,73 @@ const mapLocationStore = mapLocation()
 const productOptions = ref([])
 const selectedProduct = ref(mapProductStore.currentProduct)
 
-// 省份价格排名数据
 const provincePriceRanking = ref([])
 
-const mockPriceDataGroups = [
-  [
-    { day: '第1天', price: 8.5, probability: 0.85 },
-    { day: '第2天', price: 8.3, probability: 0.82 },
-    { day: '第3天', price: 8.1, probability: 0.78 },
-    { day: '第4天', price: 8.0, probability: 0.75 },
-    { day: '第5天', price: 7.9, probability: 0.72 },
-  ],
-  [
-    { day: '第1天', price: 9.2, probability: 0.88 },
-    { day: '第2天', price: 9.0, probability: 0.85 },
-    { day: '第3天', price: 8.8, probability: 0.82 },
-    { day: '第4天', price: 8.6, probability: 0.80 },
-    { day: '第5天', price: 8.5, probability: 0.78 },
-  ],
-  [
-    { day: '第1天', price: 7.9, probability: 0.80 },
-    { day: '第2天', price: 7.7, probability: 0.78 },
-    { day: '第3天', price: 7.5, probability: 0.75 },
-    { day: '第4天', price: 7.4, probability: 0.72 },
-    { day: '第5天', price: 7.3, probability: 0.70 },
-  ],
-]
-
-// 简单的伪随机数生成器（基于种子）
 const seededRandom = (seed) => {
   let x = Math.sin(seed) * 10000
   return x - Math.floor(x)
 }
 
-// 根据蔬菜名称和城市生成5天预测数据
 const generatePredictionData = (productName, cityName) => {
-  let basePrice = 0
   const province = mapLocationStore.currentProvince || '河南省'
+  const city = mapLocationStore.currentCity || '郑州市'
+  const district = mapLocationStore.currentDistrict || '中原区'
+  
+  const cacheStore = pricePredictionCache()
+  
+  const cachedData = cacheStore ? cacheStore.getCache(province, city, district, productName) : null
+  
+  if (cachedData && cachedData.timeline) {
+    return cachedData.timeline.map(item => ({
+      day: item.date,
+      price: item.price,
+      probability: 0.85 + Math.random() * 0.1
+    }))
+  }
+  
+  let basePrice = 0
   
   if (province === '河南省' && productName === '大白菜') {
     basePrice = 1.5 + Math.random() * 1.5
   } else if (province === '河南省' && productName === '黄瓜') {
     basePrice = 5.5 + Math.random() * 2.5
   } else if (province === '四川省' && productName === '黄瓜') {
-    basePrice = 4 + Math.random() * 4
+    basePrice = 7 + Math.random() * 2
   } else if (province === '四川省' && productName === '大白菜') {
     basePrice = 2 + Math.random() * 1
   } else {
-    basePrice = 5 + seededRandom(productName.length + cityName.length) * 5
+    basePrice = 5 + seededRandom((productName?.length || 0) + (cityName?.length || 0)) * 5
   }
   
   const data = []
   const today = new Date()
   
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 7; i++) {
     const date = new Date(today)
     date.setDate(date.getDate() + i)
     const dateStr = date.toISOString().split('T')[0].substring(5)
     
-    const daySeed = (productName.charCodeAt(i % productName.length || 0) + cityName.charCodeAt(i % cityName.length || 0)) * i
+    const daySeed = ((productName?.charCodeAt(i % productName.length || 0) || 0) + (cityName?.charCodeAt(i % cityName.length || 0) || 0)) * i
     const priceVariation = (seededRandom(daySeed) - 0.5) * (basePrice * 0.2)
     const probability = 0.6 + seededRandom(daySeed + 100) * 0.35
     
     data.push({
       day: dateStr,
       price: Math.max(1, (basePrice + priceVariation).toFixed(1)),
-      probability: Math.min(0.95, Math.max(0.5, probability))
+      probability: Math.min(0.98, Math.max(0.65, probability))
     })
   }
   
   return data
 }
 
-// 更新省份价格排名
 const updateProvincePriceRanking = () => {
   const productName = selectedProduct.value || '大白菜'
   const cityName = mapLocationStore.currentCity || '郑州市'
   const predictionData = generatePredictionData(productName, cityName)
   provincePriceRanking.value = predictionData
-  console.log(`更新 ${productName} (${cityName}) 的5天价格预测：`, predictionData)
 }
 
-// 1. 加载数据的逻辑
 const loadProductOptions = async () => {
   try {
     const data = await getAllVaegettableTypes()
@@ -170,7 +143,6 @@ const loadProductOptions = async () => {
       const groupedData = {}
       data.forEach((item) => {
         if (!item.oneLevel) return
-
         if (!groupedData[item.oneLevel]) {
           groupedData[item.oneLevel] = {
             oneLevel: item.oneLevel,
@@ -195,26 +167,24 @@ const loadProductOptions = async () => {
   }
 }
 
-// 2. 处理选中变化
 const handleProductChange = (val) => {
   selectedProduct.value = val
   mapProductStore.setCurrentProduct(val)
   emit('product-change', val)
-  updateProvincePriceRanking()
 }
 
-// 监听蔬菜变化
 watch(
   () => mapProductStore.currentProduct,
   (newProduct) => {
-    if (newProduct && newProduct !== selectedProduct.value) {
-      selectedProduct.value = newProduct
+    if (newProduct) {
+      if (newProduct !== selectedProduct.value) {
+        selectedProduct.value = newProduct
+      }
       updateProvincePriceRanking()
     }
   }
 )
 
-// 监听城市变化
 watch(
   () => mapLocationStore.currentCity,
   (newCity) => {
@@ -222,6 +192,14 @@ watch(
       updateProvincePriceRanking()
     }
   }
+)
+
+watch(
+  () => pricePredictionCache().cache,
+  () => {
+    updateProvincePriceRanking()
+  },
+  { deep: true }
 )
 
 onMounted(() => {
@@ -232,56 +210,46 @@ onMounted(() => {
 
 <style scoped>
 /* ==================== 
-   布局与容器样式 (绿色风)
+   布局与容器样式
    ==================== */
 .side-decor {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 22%;
-  max-width: 300px;
-  height: 85%;
+  
+  /* --- 修改：进一步缩窄 --- */
+  width: 19%; 
+  max-width: 260px; /* 限制最大宽度 */
+  min-width: 230px; /* 保证最小可读性 */
+  /* --------------------- */
+  
+  height: 95%; 
   z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 8px; 
   pointer-events: auto;
 }
 
 .right-panel {
   right: 20px;
-  /* 绿色边框 */
-  border-right: 1px solid rgba(66, 227, 164, 0.3);
+  border-right: 1px solid rgba(59, 161, 255, 0.3);
   padding-right: 15px;
   text-align: right;
   align-items: flex-end;
-  /* 绿色渐变背景 */
-  background: linear-gradient(270deg, rgba(66, 227, 164, 0.08), transparent);
-}
-
-.panel-title {
-  font-size: 16px;
-  color: #42e3a4;
-  font-weight: bold;
-  letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(66, 227, 164, 0.6);
-  white-space: nowrap;
-  width: 100%;
-  text-align: right;
-  margin-bottom: 8px;
-  border-bottom: 2px solid rgba(66, 227, 164, 0.1);
-  padding-bottom: 6px;
+  background: linear-gradient(270deg, rgba(59, 161, 255, 0.08), transparent);
 }
 
 .selector-section {
   width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
+  flex-shrink: 0; 
 }
 
 .selector-label {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   letter-spacing: 1px;
   text-align: right;
 }
@@ -289,7 +257,7 @@ onMounted(() => {
 .selector-label::before {
   content: '▼';
   font-size: 10px;
-  color: #42e3a4;
+  color: #3ba1ff; 
   margin-right: 4px;
 }
 
@@ -307,255 +275,252 @@ onMounted(() => {
   height: 1px;
   background: repeating-linear-gradient(
     90deg,
-    rgba(66, 227, 164, 0.4) 0,
-    rgba(66, 227, 164, 0.4) 4px,
+    rgba(59, 161, 255, 0.4) 0,
+    rgba(59, 161, 255, 0.4) 4px,
     transparent 4px,
     transparent 8px
   );
-  margin: 6px 0;
-}
-
-.price-ranking-section {
-  width: 100%;
-  margin: 10px 0;
+  margin: 4px 0;
   flex-shrink: 0;
 }
 
+/* --- 列表区域占满剩余空间 --- */
+.price-ranking-section {
+  width: 100%;
+  margin: 0; 
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+  min-height: 0;
+}
+
 .section-title {
-  font-size: 12px;
-  color: #42e3a4;
+  font-size: 13px;
+  color: #B766FF; 
   font-weight: bold;
   margin-bottom: 8px;
   text-align: right;
   letter-spacing: 1px;
-  text-shadow: 0 0 6px rgba(66, 227, 164, 0.4);
-}
-
-.ranking-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.ranking-item {
-  display: flex;
-  align-items: center;
-  padding: 6px 8px;
-  background: rgba(66, 227, 164, 0.05);
-  border: 1px solid rgba(66, 227, 164, 0.15);
-  border-radius: 3px;
-  transition: all 0.3s ease;
-  min-height: 32px;
-}
-
-.ranking-item:hover {
-  background: rgba(66, 227, 164, 0.12);
-  border-color: rgba(66, 227, 164, 0.3);
-  box-shadow: 0 0 10px rgba(66, 227, 164, 0.15);
-}
-
-.day-label {
-  width: 45px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
+  text-shadow: 0 0 6px rgba(183, 102, 255, 0.4);
   flex-shrink: 0;
 }
 
+/* 列表容器 */
+.ranking-list {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; 
+  gap: 4px; 
+  overflow: hidden; 
+}
+
+/* 列表项：保持三列均分，缩小间隙适应窄屏 */
+.ranking-item {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); 
+  /* --- 修改：减小间隙 --- */
+  gap: 2px; 
+  align-items: center;
+  
+  /* --- 修改：减小左右内边距 --- */
+  padding: 0 5px; 
+  
+  background: rgba(59, 161, 255, 0.05);
+  border: 1px solid rgba(59, 161, 255, 0.15);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  flex: 1; 
+  min-height: 0; 
+}
+
+.ranking-item:hover {
+  background: rgba(59, 161, 255, 0.15);
+  border-color: rgba(59, 161, 255, 0.4);
+  box-shadow: 0 0 15px rgba(59, 161, 255, 0.2);
+  transform: translateX(-5px); 
+}
+
+/* 日期：Grid内左对齐 */
+.day-label {
+  justify-self: start; 
+  text-align: left;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  white-space: nowrap; /* 防止日期换行 */
+}
+
+/* 价格：Grid内居中对齐 */
 .price-info {
-  flex: 1;
+  justify-self: center; 
   display: flex;
   align-items: baseline;
-  gap: 3px;
-  justify-content: center;
+  gap: 1px;
+  white-space: nowrap; 
 }
 
 .price-value {
-  font-size: 15px;
+  /* --- 修改：字号微调，适应窄屏 --- */
+  font-size: 16px; 
   font-weight: bold;
-  color: #42e3a4;
+  color: #45d0b2; 
   font-family: 'Arial', sans-serif;
+  text-shadow: 0 0 8px rgba(69, 208, 178, 0.4);
 }
 
 .price-unit {
   font-size: 10px;
-  color: rgba(66, 227, 164, 0.7);
+  color: #45d0b2; 
+  text-shadow: 0 0 8px rgba(69, 208, 178, 0.4);
 }
 
+/* 概率：Grid内右对齐 */
 .probability-badge {
+  justify-self: end; 
+  
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(66, 227, 164, 0.1);
-  border: 1px solid rgba(66, 227, 164, 0.2);
+  justify-content: center;
+  background: rgba(59, 161, 255, 0.1);
+  border: 1px solid rgba(59, 161, 255, 0.25);
   border-radius: 3px;
-  padding: 3px 6px;
-  min-width: 50px;
+  /* --- 修改：减小徽章内边距 --- */
+  padding: 2px 4px;
+  min-width: 45px; /* 减小最小宽度 */
+  height: auto;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
 .probability-value {
+  /* --- 修改：字号微调 --- */
   font-size: 12px;
   font-weight: bold;
-  color: #42e3a4;
+  color: #3ba1ff;
   line-height: 1.1;
+  text-shadow: 0 0 5px rgba(59, 161, 255, 0.4);
 }
 
 .probability-label {
   font-size: 9px;
-  color: rgba(66, 227, 164, 0.6);
+  color: rgba(59, 161, 255, 0.7);
   margin-top: 1px;
 }
 
-.weather-monitor {
-  flex: 1;
-  overflow: hidden;
-  width: 100%;
-  min-height: 0;
-}
-
-.v-ruler {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  opacity: 0.5;
-  padding-top: 6px;
-  align-items: flex-end;
-  flex-shrink: 0;
-}
-
-.tick {
-  width: 8px;
-  height: 2px;
-  background: #42e3a4;
-  box-shadow: 0 0 5px rgba(66, 227, 164, 0.5);
-}
-
 /* ==================== 
-   输入框样式强力覆盖 
-   /* ==================== */
+   输入框样式覆盖 (科技蓝系)
+   ==================== */
 :deep(.el-input__wrapper) {
   background-color: transparent !important;
-  border: 1px solid rgba(66, 227, 164, 0.3) !important;
+  border: 1px solid rgba(59, 161, 255, 0.3) !important;
   box-shadow: none !important;
   border-radius: 2px;
-  padding: 6px 12px !important;
+  padding: 6px 8px !important; /* 减小输入框内边距 */
   transition: all 0.3s ease;
 }
 
-/* 鼠标悬停时的输入框 */
 :deep(.el-input__wrapper:hover) {
-  border-color: rgba(66, 227, 164, 0.5) !important;
-  box-shadow: 0 0 8px rgba(66, 227, 164, 0.15) !important;
+  border-color: rgba(59, 161, 255, 0.6) !important;
+  box-shadow: 0 0 8px rgba(59, 161, 255, 0.2) !important;
 }
 
-/* 选中/聚焦时的输入框 */
 :deep(.el-input__wrapper.is-focus) {
-  border-color: rgba(66, 227, 164, 0.7) !important;
-  box-shadow: 0 0 12px rgba(66, 227, 164, 0.2) !important;
+  border-color: #3ba1ff !important;
+  box-shadow: 0 0 12px rgba(59, 161, 255, 0.3) !important;
 }
 
-/* 输入文字样式 */
 :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: #fff !important;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13px; /* 字号微调 */
   text-align: right;
   font-family: 'Microsoft YaHei', sans-serif;
   background-color: transparent !important;
-  background-image: none !important;
 }
 
-/* 覆盖Element UI select的wrapper默认白色背景 */
 :deep(.el-select__wrapper) {
   background-color: transparent !important;
-  background-image: none !important;
 }
 
-/* 确保输入框容器也完全透明 */
 :deep(.el-input) {
   background-color: transparent !important;
 }
 
-/* 占位符颜色 */
 :deep(.el-input__inner::placeholder) {
-  color: rgba(66, 227, 164, 0.4);
+  color: rgba(59, 161, 255, 0.5);
 }
 
-/* 右侧箭头图标 */
 :deep(.el-select__caret) {
-  color: rgba(66, 227, 164, 0.7) !important;
+  color: #3ba1ff !important;
   font-size: 14px;
 }
 </style>
 
 <style>
-/* 下拉菜单容器 */
-.tech-select-dropdown-green.el-popper {
-  background: rgba(4, 20, 15, 0.9) !important;
-  border: 1px solid rgba(66, 227, 164, 0.3) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+/* 下拉菜单容器 (科技蓝系) */
+.tech-select-dropdown-blue.el-popper {
+  background: rgba(2, 12, 30, 0.95) !important;
+  border: 1px solid rgba(59, 161, 255, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: blur(8px);
 }
 
-/* 隐藏原本的小三角箭头 */
-.tech-select-dropdown-green .el-popper__arrow::before {
-  background: rgba(4, 20, 15, 0.9) !important;
-  border: 1px solid rgba(66, 227, 164, 0.3) !important;
+.tech-select-dropdown-blue .el-popper__arrow::before {
+  background: rgba(2, 12, 30, 0.95) !important;
+  border: 1px solid rgba(59, 161, 255, 0.3) !important;
 }
 
-/* 分组标题 */
-.tech-select-dropdown-green .el-select-group__title {
-  color: rgba(66, 227, 164, 0.8) !important;
+.tech-select-dropdown-blue .el-select-group__title {
+  color: #3ba1ff !important;
   font-size: 11px;
-  border-bottom: 1px solid rgba(66, 227, 164, 0.15);
+  border-bottom: 1px solid rgba(59, 161, 255, 0.2);
   padding: 8px 12px;
-  background: rgba(66, 227, 164, 0.05);
-  font-weight: 500;
+  background: rgba(59, 161, 255, 0.05);
+  font-weight: bold;
 }
 
-/* 选项样式 */
-.tech-select-dropdown-green .el-select-dropdown__item {
-  color: rgba(255, 255, 255, 0.85) !important;
+.tech-select-dropdown-blue .el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.8) !important;
   padding: 0 12px !important;
   height: 36px;
   line-height: 36px;
   font-size: 13px;
 }
 
-/* 选项悬停 */
-.tech-select-dropdown-green .el-select-dropdown__item.hover,
-.tech-select-dropdown-green .el-select-dropdown__item:hover {
-  background-color: rgba(66, 227, 164, 0.12) !important;
+.tech-select-dropdown-blue .el-select-dropdown__item.hover,
+.tech-select-dropdown-blue .el-select-dropdown__item:hover {
+  background-color: rgba(59, 161, 255, 0.15) !important;
+  color: #fff !important;
 }
 
-/* 选中状态 */
-.tech-select-dropdown-green .el-select-dropdown__item.selected {
-  color: #42e3a4 !important;
-  font-weight: 500;
-  background: rgba(66, 227, 164, 0.1) !important;
+.tech-select-dropdown-blue .el-select-dropdown__item.selected {
+  color: #3ba1ff !important;
+  font-weight: bold;
+  background: rgba(59, 161, 255, 0.1) !important;
+  text-shadow: 0 0 5px rgba(59, 161, 255, 0.4);
 }
 
-/* 自定义选项内部布局 */
-.tech-select-dropdown-green .option-item {
+.tech-select-dropdown-blue .option-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
 }
 
-/* 选项左侧的小标签 */
-.tech-select-dropdown-green .option-category {
+.tech-select-dropdown-blue .option-category {
   font-size: 10px;
-  color: rgba(66, 227, 164, 0.7);
-  border: 1px solid rgba(66, 227, 164, 0.3);
+  color: rgba(59, 161, 255, 0.7);
+  border: 1px solid rgba(59, 161, 255, 0.3);
   border-radius: 2px;
   padding: 0 4px;
   height: 16px;
   line-height: 14px;
 }
 
-.tech-select-dropdown-green .option-name {
+.tech-select-dropdown-blue .option-name {
   font-size: 13px;
 }
 </style>

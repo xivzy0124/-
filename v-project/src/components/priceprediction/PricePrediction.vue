@@ -10,8 +10,8 @@
             <span class="title-icon">🧠</span>
           </div>
           <div class="title-text-group">
-            <span class="title-main">Agr-Brain 价格预测引擎</span>
-            <span class="title-sub">LSTM-V3 Model / Real-time Inference</span>
+            <span class="title-main">农智大脑 · 价格预测引擎</span>
+            <span class="title-sub">基于 LSTM-V3 深度学习模型 / 实时推演</span>
           </div>
         </div>
         <button class="close-btn" @click="close">
@@ -23,11 +23,11 @@
         
         <div class="hero-section">
           <div class="product-tag-float">
-            <span class="p-icon">🥒</span> {{ selectedProduct }} (Category A)
+            <span class="p-icon">💠</span> {{ selectedProduct }} (重点监测品类)
           </div>
           
           <div class="date-hero-wrapper">
-            <label class="hero-label">PREDICTION TARGET DATE</label>
+            <label class="hero-label">选择预测目标日期</label>
             <div class="date-display-box" :class="{ 'disabled': isLoading }">
               <input 
                 v-model="targetDate" 
@@ -47,23 +47,23 @@
             <div class="scan-core"></div>
           </div>
           <div class="loading-text">
-            AGR-BRAIN 引擎正在分析中
+            正在分析市场数据
             <span class="dot-flashing"></span>
           </div>
-          <div class="loading-sub">正在检索气象数据与历史行情...</div>
+          <div class="loading-sub">检索气象条件 / 调取历史行情 / 计算供需模型...</div>
         </div>
 
         <div v-else class="result-container animate-fade-in">
           <div class="dashboard-grid">
             <div class="metric-card price-card">
               <div class="card-header">
-                <span class="card-label">预测单价</span>
-                <span class="live-badge">AI LIVE</span>
+                <span class="card-label">预测单价 ({{ targetDate }})</span>
+                <span class="live-badge">AI 实时</span>
               </div>
               <div class="price-display">
                 <span class="currency">¥</span>
                 <span class="big-number">{{ predictedPrice }}</span>
-                <span class="unit">/kg</span>
+                <span class="unit">/斤</span>
               </div>
               <div class="trend-row">
                 <div class="trend-badge" :class="trendClass">
@@ -74,28 +74,28 @@
             </div>
 
             <div class="metric-card analysis-card">
-              <div class="card-label">影响因子分析</div>
+              <div class="card-label">影响因素分析</div>
               <div class="factor-list">
                 <div class="factor-item">
                   <span class="f-name">🌦️ 气象条件</span>
-                  <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.weather + '%', background: '#42e3a4'}"></div></div>
+                  <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.weather + '%', background: '#00f7ff'}"></div></div>
                   <span class="f-val">{{ factors.weather }}%</span>
                 </div>
                 <div class="factor-item">
                   <span class="f-name">📦 库存周转</span>
-                  <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.inventory + '%', background: '#ffd700'}"></div></div>
+                  <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.inventory + '%', background: '#3ba1ff'}"></div></div>
                   <span class="f-val">{{ factors.inventory }}%</span>
                 </div>
                 <div class="factor-item">
                   <span class="f-name">🚚 物流成本</span>
-                  <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.logistics + '%', background: '#ff6b6b'}"></div></div>
+                  <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.logistics + '%', background: '#b766ff'}"></div></div>
                   <span class="f-val">{{ factors.logistics }}%</span>
                 </div>
               </div>
             </div>
 
             <div class="metric-card confidence-card">
-              <div class="card-label">模型准确率</div>
+              <div class="card-label">预测可信度</div>
               <div class="confidence-circle">
                 <svg viewBox="0 0 36 36" class="circular-chart">
                   <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -103,18 +103,17 @@
                 </svg>
                 <div class="percentage-text">{{ confidence }}<span class="pct">%</span></div>
               </div>
-              <div class="risk-label">风险等级: <span style="color:#42e3a4">低</span></div>
+              <div class="risk-label">风险等级: <span style="color:#00f7ff">低</span></div>
             </div>
           </div>
 
           <div class="chart-section">
             <div class="chart-header">
               <div class="chart-title">
-                <span class="chart-icon">📈</span> 近7日走势拟合 & 未来预测
+                <span class="chart-icon">📈</span> 未来价格走势预测
               </div>
               <div class="legend">
-                <span class="dot history"></span>历史数据
-                <span class="dot predict"></span>AI预测点
+                <span class="dot predict"></span>AI 预测趋势
               </div>
             </div>
             <div ref="chartRef" class="chart-container"></div>
@@ -136,7 +135,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import { mapLocation, mapProduct } from '../../stores/store.js'
+import { mapLocation, mapProduct, pricePredictionCache } from '../../stores/store.js'
 
 const props = defineProps({
   visible: {
@@ -158,7 +157,7 @@ const provinceName = computed(() => mapLocationStore.currentProvince)
 const targetDate = ref('')
 const selectedProduct = ref(productName.value || '黄瓜')
 const chartRef = ref(null)
-const isLoading = ref(false) // 新增 Loading 状态
+const isLoading = ref(false) 
 let chartInstance = null
 
 const predictedPrice = ref('0.00')
@@ -172,11 +171,11 @@ const minDate = computed(() => {
 
 const defaultDate = computed(() => {
   const today = new Date()
-  today.setDate(today.getDate() + 2)
+  today.setDate(today.getDate() + 1) // 默认为明天
   return today.toISOString().split('T')[0]
 })
 
-// 监听 store 变化，如果弹窗开着就重新预测
+// 监听 store 变化
 watch([productName, provinceName], () => {
   selectedProduct.value = productName.value || '黄瓜'
   if (props.visible) {
@@ -209,41 +208,49 @@ const trendText = computed(() => {
 // 计算属性：环比
 const priceDiff = computed(() => {
   const current = parseFloat(predictedPrice.value)
-  const base = 5.0
+  const base = current * (1 - (Math.random() * 0.1 - 0.05)) 
   const diff = ((current - base) / base * 100).toFixed(1)
   return (diff > 0 ? '+' : '') + diff + '%'
 })
 
 const diffClass = computed(() => {
-  return parseFloat(predictedPrice.value) >= 5 ? 'diff-up' : 'diff-down'
+  return parseFloat(priceDiff.value) >= 0 ? 'diff-up' : 'diff-down'
 })
 
-// 核心逻辑：生成预测 (带模拟延迟)
+// 核心逻辑
 const generatePrediction = () => {
-  // 1. 开启 Loading
   isLoading.value = true
   
-  // 销毁旧图表，防止残留
   if (chartInstance) {
     chartInstance.dispose()
     chartInstance = null
   }
 
-  // 2. 模拟 1.5秒 AI 计算延迟
+  const province = provinceName.value || '河南省'
+  const city = mapLocationStore.currentCity || '郑州市'
+  const district = mapLocationStore.currentDistrict || '中原区'
+  const product = productName.value || '黄瓜'
+  
+  const cacheStore = pricePredictionCache()
+  const cachedData = cacheStore ? cacheStore.getCache(province, city, district, product) : null
+
   setTimeout(async () => {
     let basePrice = 0
     
-    // 简单的模拟逻辑
-    if (provinceName.value === '河南省' && productName.value === '大白菜') {
-      basePrice = 1.5 + Math.random() * 1.5
-    } else if (provinceName.value === '河南省' && productName.value === '黄瓜') {
-      basePrice = 5.5 + Math.random() * 2.5
-    } else if (provinceName.value === '四川省' && productName.value === '黄瓜') {
-      basePrice = 4 + Math.random() * 4
-    } else if (provinceName.value === '四川省' && productName.value === '大白菜') {
-      basePrice = 2 + Math.random() * 1
+    if (cachedData && cachedData.timeline && cachedData.timeline.length > 0) {
+      basePrice = parseFloat(cachedData.timeline[0].price)
     } else {
-      basePrice = 5
+      if (province === '河南省' && product === '大白菜') {
+        basePrice = 1.5 + Math.random() * 1.5
+      } else if (province === '河南省' && product === '黄瓜') {
+        basePrice = 5.5 + Math.random() * 2.5
+      } else if (province === '四川省' && product === '黄瓜') {
+        basePrice = 7 + Math.random() * 2
+      } else if (province === '四川省' && product === '大白菜') {
+        basePrice = 2 + Math.random() * 1
+      } else {
+        basePrice = 5
+      }
     }
     
     const variance = (Math.random() - 0.5) * 0.5
@@ -256,17 +263,15 @@ const generatePrediction = () => {
       logistics: Math.floor(Math.random() * 30 + 10)
     }
 
-    // 3. 计算完成，关闭 Loading
     isLoading.value = false
     
-    // 4. 等待 DOM 渲染完毕后初始化图表
     await nextTick()
     initChart()
     
   }, 1500)
 }
 
-// 图表初始化
+// 图表初始化 (ECharts 蓝色系 - 纯未来数据)
 const initChart = () => {
   if (!chartRef.value) return
   if (chartInstance) chartInstance.dispose()
@@ -276,20 +281,61 @@ const initChart = () => {
   const prices = []
   const today = new Date()
   
-  // 简单的基准价格逻辑用于图表历史数据
-  let basePrice = parseFloat(predictedPrice.value) || 5
+  const province = provinceName.value || '河南省'
+  const city = mapLocationStore.currentCity || '郑州市'
+  const district = mapLocationStore.currentDistrict || '中原区'
+  const product = productName.value || '黄瓜'
   
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    dates.push(date.toISOString().split('T')[0].substring(5))
-    // 制造一些波动
-    prices.push((basePrice + Math.sin(i) * 0.5 + (Math.random() - 0.5) * 0.3).toFixed(2))
+  const seededRandom = (seed) => {
+    let x = Math.sin(seed) * 10000
+    return x - Math.floor(x)
   }
   
-  dates.push(targetDate.value ? targetDate.value.substring(5) : '预测')
-  prices.push(predictedPrice.value)
+  const cacheStore = pricePredictionCache()
+  const cachedData = cacheStore ? cacheStore.getCache(province, city, district, product) : null
   
+  if (cachedData && cachedData.timeline && cachedData.timeline.length >= 7) {
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today)
+      date.setDate(date.getDate() + i + 1)
+      dates.push(date.toISOString().split('T')[0].substring(5))
+      prices.push(parseFloat(cachedData.timeline[i].price))
+    }
+  } else {
+    let basePrice = 0
+    
+    if (province === '河南省' && product === '大白菜') {
+      basePrice = 1.5 + Math.random() * 1.5
+    } else if (province === '河南省' && product === '黄瓜') {
+      basePrice = 5.5 + Math.random() * 2.5
+    } else if (province === '四川省' && product === '黄瓜') {
+      basePrice = 7 + Math.random() * 2
+    } else if (province === '四川省' && product === '大白菜') {
+      basePrice = 2 + Math.random() * 1
+    } else {
+      basePrice = 5 + seededRandom((product?.length || 0) + (city?.length || 0)) * 5
+    }
+    
+    for (let i = 1; i <= 7; i++) {
+      const date = new Date(today)
+      date.setDate(date.getDate() + i)
+      const dateStr = date.toISOString().split('T')[0].substring(5)
+      dates.push(dateStr)
+      
+      const daySeed = ((product?.charCodeAt(i % product.length || 0) || 0) + (city?.charCodeAt(i % city.length || 0) || 0)) * i
+      const priceVariation = (seededRandom(daySeed) - 0.5) * (basePrice * 0.2)
+      
+      prices.push(Math.max(1, (basePrice + priceVariation).toFixed(2)))
+    }
+  }
+  
+  // 找到目标日期在数组中的索引，用于标记 MarkPoint
+  const targetIndex = dates.findIndex(d => {
+      const dObj = new Date(today.getFullYear(), parseInt(d.split('-')[0])-1, parseInt(d.split('-')[1]))
+      // 简单匹配 MM-DD
+      return targetDate.value && targetDate.value.endsWith(d)
+  })
+
   const option = {
     backgroundColor: 'transparent',
     grid: {
@@ -298,67 +344,72 @@ const initChart = () => {
     },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(5, 20, 15, 0.95)',
-      borderColor: '#42e3a4',
+      backgroundColor: 'rgba(5, 20, 35, 0.95)',
+      borderColor: '#00f7ff',
       textStyle: { color: '#fff', fontFamily: 'monospace' },
       formatter: (params) => {
         const item = params[0]
-        const isPredict = item.dataIndex === prices.length - 1
-        return `<div style="color:#8aa;font-size:12px;margin-bottom:4px">${item.name}</div>
-                <div style="color:${isPredict ? '#ffd700' : '#42e3a4'};font-weight:bold">
-                  ${isPredict ? '🔮 预测' : '📅 历史'}: ${item.value}
+        return `<div style="color:#a6b0c3;font-size:12px;margin-bottom:4px">${item.name}</div>
+                <div style="color:#00f7ff;font-weight:bold">
+                  🔮 预测价格: ${item.value} 元/斤
                 </div>`
       }
     },
     xAxis: {
       type: 'category',
       data: dates,
-      axisLabel: { color: '#688', fontSize: 11 },
-      axisLine: { lineStyle: { color: '#2c4a45' } },
+      axisLabel: { color: '#a6b0c3', fontSize: 11 },
+      axisLine: { lineStyle: { color: 'rgba(59, 161, 255, 0.3)' } },
       axisTick: { show: false },
       boundaryGap: false
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: 'rgba(66, 227, 164, 0.08)', type: 'dashed' } },
-      axisLabel: { color: '#587a75' }
+      scale: true,
+      splitLine: { lineStyle: { color: 'rgba(59, 161, 255, 0.1)', type: 'dashed' } },
+      axisLabel: { color: '#a6b0c3' }
     },
     series: [
       {
-        name: '价格',
+        name: '未来趋势',
         type: 'line',
         smooth: 0.4,
         symbol: 'circle',
-        symbolSize: (val, params) => params.dataIndex === prices.length - 1 ? 12 : 6,
+        symbolSize: 8,
         itemStyle: {
-          color: (params) => params.dataIndex === prices.length - 1 ? '#ffd700' : '#42e3a4',
+          color: '#00f7ff',
           borderColor: '#fff',
           borderWidth: 2,
           shadowBlur: 10,
-          shadowColor: (params) => params.dataIndex === prices.length - 1 ? '#ffd700' : 'transparent'
+          shadowColor: '#00f7ff'
         },
         lineStyle: {
           width: 3,
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: '#42e3a4' },
-            { offset: 1, color: '#ffd700' }
+            { offset: 0, color: '#3ba1ff' },
+            { offset: 1, color: '#00f7ff' }
           ]),
-          shadowColor: 'rgba(66, 227, 164, 0.5)',
+          shadowColor: 'rgba(0, 247, 255, 0.5)',
           shadowBlur: 10
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(66, 227, 164, 0.3)' },
-            { offset: 1, color: 'rgba(66, 227, 164, 0.0)' }
+            { offset: 0, color: 'rgba(0, 247, 255, 0.2)' },
+            { offset: 1, color: 'rgba(59, 161, 255, 0.0)' }
           ])
         },
         data: prices,
-        markLine: {
-          symbol: 'none',
-          data: [{ type: 'average', name: 'Avg' }],
-          lineStyle: { color: 'rgba(255,255,255,0.2)', type: 'dotted' },
-          label: { show: false }
-        }
+        markPoint: targetIndex >= 0 ? {
+           data: [
+             { 
+               name: '预测目标', 
+               coord: [targetIndex, prices[targetIndex]],
+               value: prices[targetIndex],
+               itemStyle: { color: '#ffd700' },
+               label: { color: '#000', fontWeight: 'bold' }
+             }
+           ]
+        } : null
       }
     ]
   }
@@ -381,11 +432,9 @@ const confirmPrediction = () => {
   close()
 }
 
-// 监听 visible 属性
 watch(() => props.visible, (newVal) => {
   if (newVal) {
-    targetDate.value = defaultDate.value
-    // 打开弹窗时，触发带 loading 的预测
+    if (!targetDate.value) targetDate.value = defaultDate.value
     generatePrediction()
   } else {
     if (chartInstance) {
@@ -395,13 +444,17 @@ watch(() => props.visible, (newVal) => {
   }
 })
 
-// 监听日期变化
 watch(targetDate, (newVal, oldVal) => {
-  // 防止在关闭弹窗清空日期时触发
   if (props.visible && newVal) {
     generatePrediction()
   }
 })
+
+watch(() => pricePredictionCache().cache, () => {
+  if (props.visible) {
+    generatePrediction()
+  }
+}, { deep: true })
 
 onUnmounted(() => {
   if (chartInstance) chartInstance.dispose()
@@ -415,7 +468,7 @@ onUnmounted(() => {
 .price-prediction-overlay {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(2, 8, 6, 0.85);
+  background: rgba(2, 10, 15, 0.85); /* 深蓝背景 */
   backdrop-filter: blur(12px);
   z-index: 9999;
   display: flex; align-items: center; justify-content: center;
@@ -425,10 +478,10 @@ onUnmounted(() => {
 
 .price-prediction-modal {
   width: 95%; max-width: 900px;
-  background: linear-gradient(145deg, rgba(10, 25, 22, 0.95), rgba(5, 15, 12, 0.98));
-  border: 1px solid rgba(66, 227, 164, 0.25);
+  background: linear-gradient(145deg, rgba(10, 30, 50, 0.95), rgba(5, 20, 35, 0.98));
+  border: 1px solid rgba(0, 247, 255, 0.3); /* 青色边框 */
   border-radius: 24px;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(66, 227, 164, 0.1);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 20px rgba(0, 247, 255, 0.1);
   overflow: hidden;
   transform: translateY(30px);
   animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -438,8 +491,8 @@ onUnmounted(() => {
 /* 装饰线条 */
 .modal-decoration-line {
   height: 2px;
-  background: linear-gradient(90deg, transparent, #42e3a4, #ffd700, transparent);
-  box-shadow: 0 1px 10px rgba(66, 227, 164, 0.5);
+  background: linear-gradient(90deg, transparent, #00f7ff, #3ba1ff, transparent);
+  box-shadow: 0 1px 10px rgba(0, 247, 255, 0.5);
 }
 
 /* 顶部 */
@@ -451,22 +504,22 @@ onUnmounted(() => {
 .header-title { display: flex; align-items: center; gap: 15px; }
 .icon-box {
   width: 36px; height: 36px;
-  background: rgba(66, 227, 164, 0.1); border-radius: 8px;
+  background: rgba(0, 247, 255, 0.1); border-radius: 8px;
   display: flex; align-items: center; justify-content: center; position: relative;
 }
 .pulse-dot {
   position: absolute; top: -2px; right: -2px; width: 6px; height: 6px;
-  background: #ffd700; border-radius: 50%;
+  background: #00f7ff; border-radius: 50%;
   animation: pulse 1.5s infinite;
 }
 .title-main { display: block; font-size: 16px; font-weight: 700; color: #fff; }
-.title-sub { display: block; font-size: 10px; color: #42e3a4; opacity: 0.7; letter-spacing: 1px; }
+.title-sub { display: block; font-size: 10px; color: #3ba1ff; opacity: 0.8; letter-spacing: 1px; }
 
 .close-btn {
   background: transparent; border: none; color: rgba(255,255,255,0.3);
   cursor: pointer; padding: 5px; transition: 0.2s;
 }
-.close-btn:hover { color: #fff; transform: rotate(90deg); }
+.close-btn:hover { color: #00f7ff; transform: rotate(90deg); }
 
 .modal-body { padding: 30px 40px; min-height: 400px; }
 
@@ -478,13 +531,14 @@ onUnmounted(() => {
 }
 .product-tag-float {
   display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(66, 227, 164, 0.08); border: 1px solid rgba(66, 227, 164, 0.2);
+  background: rgba(0, 247, 255, 0.08); border: 1px solid rgba(0, 247, 255, 0.3);
   padding: 6px 16px; border-radius: 20px;
-  font-size: 13px; color: #42e3a4; font-weight: 600;
+  font-size: 13px; color: #00f7ff; font-weight: 600;
   margin-bottom: 15px;
+  box-shadow: 0 0 10px rgba(0, 247, 255, 0.1);
 }
 .hero-label {
-  display: block; font-size: 12px; color: #688; letter-spacing: 2px;
+  display: block; font-size: 12px; color: #a6b0c3; letter-spacing: 2px;
   margin-bottom: 10px; font-weight: bold;
 }
 .date-display-box {
@@ -498,15 +552,15 @@ onUnmounted(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 42px; font-weight: 700;
   color: #fff; text-align: center;
-  border-bottom: 2px solid rgba(66, 227, 164, 0.3);
+  border-bottom: 2px solid rgba(59, 161, 255, 0.3);
   padding-bottom: 5px; cursor: pointer;
-  text-shadow: 0 0 20px rgba(66, 227, 164, 0.3);
+  text-shadow: 0 0 20px rgba(0, 247, 255, 0.2);
   transition: all 0.3s;
   width: 320px;
 }
 .hero-date-input:focus {
-  border-bottom-color: #ffd700;
-  text-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+  border-bottom-color: #00f7ff;
+  text-shadow: 0 0 25px rgba(0, 247, 255, 0.4);
 }
 .edit-hint {
   display: block; font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 5px;
@@ -526,13 +580,13 @@ onUnmounted(() => {
 .scan-ring {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   border: 4px solid transparent;
-  border-top-color: #42e3a4; border-right-color: rgba(66, 227, 164, 0.3);
+  border-top-color: #00f7ff; border-right-color: rgba(59, 161, 255, 0.3);
   border-radius: 50%; animation: spin 1s linear infinite;
 }
 .scan-core {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 40%; height: 40%; background: #ffd700;
-  border-radius: 50%; box-shadow: 0 0 15px #ffd700;
+  width: 40%; height: 40%; background: #3ba1ff;
+  border-radius: 50%; box-shadow: 0 0 15px #00f7ff;
   animation: pulse-core 1s ease-in-out infinite;
 }
 .loading-text {
@@ -540,7 +594,7 @@ onUnmounted(() => {
   font-weight: bold; letter-spacing: 1px; margin-bottom: 8px;
   display: flex; align-items: center; gap: 5px;
 }
-.loading-sub { font-size: 12px; color: rgba(66, 227, 164, 0.7); }
+.loading-sub { font-size: 12px; color: rgba(59, 161, 255, 0.7); }
 
 /* 仪表盘 */
 .dashboard-grid {
@@ -549,30 +603,30 @@ onUnmounted(() => {
 }
 .metric-card {
   background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(0, 247, 255, 0.1);
   border-radius: 16px; padding: 20px;
   position: relative;
 }
-.price-card { background: linear-gradient(145deg, rgba(66, 227, 164, 0.05), transparent); }
+.price-card { background: linear-gradient(145deg, rgba(0, 247, 255, 0.05), transparent); }
 .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-.card-label { font-size: 12px; color: #8aa; }
+.card-label { font-size: 12px; color: #a6b0c3; }
 .live-badge { 
-  font-size: 10px; background: rgba(255,0,0,0.2); color: #ff4d4d; 
-  padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,0,0,0.3); 
+  font-size: 10px; background: rgba(0, 247, 255, 0.1); color: #00f7ff; 
+  padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0, 247, 255, 0.3); 
   animation: blink 2s infinite;
 }
 .price-display { display: flex; align-items: baseline; gap: 4px; margin-bottom: 10px; }
-.currency { color: #42e3a4; font-size: 20px; }
+.currency { color: #00f7ff; font-size: 20px; }
 .big-number { 
   font-family: 'JetBrains Mono', monospace; font-size: 46px; font-weight: 700; color: #fff;
-  text-shadow: 0 0 15px rgba(66,227,164,0.3);
+  text-shadow: 0 0 15px rgba(0, 247, 255, 0.4);
 }
-.unit { color: #688; font-size: 14px; }
+.unit { color: #a6b0c3; font-size: 14px; }
 .trend-row { display: flex; align-items: center; justify-content: space-between; }
 .trend-badge { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
-.trend-up { color: #ff6b6b; } .trend-down { color: #42e3a4; } .trend-stable { color: #ffd700; }
+.trend-up { color: #ff6b6b; } .trend-down { color: #00f7ff; } .trend-stable { color: #3ba1ff; }
 .diff-text { font-family: 'JetBrains Mono'; font-size: 12px; }
-.diff-up { color: #ff6b6b; } .diff-down { color: #42e3a4; }
+.diff-up { color: #ff6b6b; } .diff-down { color: #00f7ff; }
 
 /* 归因分析 */
 .factor-list { display: flex; flex-direction: column; gap: 12px; margin-top: 5px; }
@@ -588,15 +642,15 @@ onUnmounted(() => {
 .circular-chart { display: block; margin: 0 auto; max-width: 100%; max-height: 100%; }
 .circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3; }
 .circle { 
-  fill: none; stroke: #ffd700; stroke-width: 3; stroke-linecap: round;
+  fill: none; stroke: #00f7ff; stroke-width: 3; stroke-linecap: round;
   animation: progress 1.5s ease-out forwards;
 }
 @keyframes progress { from { stroke-dasharray: 0, 100; } }
 .percentage-text {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  font-family: 'JetBrains Mono'; font-weight: bold; color: #ffd700; font-size: 14px;
+  font-family: 'JetBrains Mono'; font-weight: bold; color: #00f7ff; font-size: 14px;
 }
-.risk-label { font-size: 12px; color: #8aa; }
+.risk-label { font-size: 12px; color: #a6b0c3; }
 
 /* 图表区 */
 .chart-section {
@@ -605,10 +659,10 @@ onUnmounted(() => {
 }
 .chart-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
 .chart-title { font-size: 13px; color: #ccc; display: flex; align-items: center; gap: 6px; }
-.legend { display: flex; gap: 12px; font-size: 12px; color: #8aa; }
+.legend { display: flex; gap: 12px; font-size: 12px; color: #a6b0c3; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
-.dot.history { background: #42e3a4; }
-.dot.predict { background: #ffd700; box-shadow: 0 0 6px #ffd700; }
+.dot.history { background: #3ba1ff; }
+.dot.predict { background: #00f7ff; box-shadow: 0 0 6px #00f7ff; }
 .chart-container { width: 100%; height: 180px; }
 
 /* 结果淡入 */
@@ -626,10 +680,10 @@ onUnmounted(() => {
 .btn-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #aaa; }
 .btn-secondary:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.05); }
 .btn-primary {
-  background: linear-gradient(135deg, #42e3a4 0%, #00a884 100%); color: #051a15;
-  box-shadow: 0 8px 25px rgba(66,227,164,0.2); display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg, #00f7ff 0%, #3ba1ff 100%); color: #051a15;
+  box-shadow: 0 8px 25px rgba(0, 247, 255, 0.2); display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(66,227,164,0.3); }
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0, 247, 255, 0.3); }
 .btn-primary:disabled { cursor: not-allowed; filter: grayscale(0.5); }
 
 /* 关键帧动画 */
@@ -638,7 +692,7 @@ onUnmounted(() => {
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 @keyframes pulse-core {
   0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
-  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; box-shadow: 0 0 25px #ffd700; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; box-shadow: 0 0 25px #00f7ff; }
 }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(10px); }
@@ -648,20 +702,20 @@ onUnmounted(() => {
 /* 点点点动画 */
 .dot-flashing {
   position: relative; width: 4px; height: 4px; margin-left: 10px;
-  border-radius: 2px; background-color: #42e3a4; color: #42e3a4;
+  border-radius: 2px; background-color: #00f7ff; color: #00f7ff;
   animation: dot-flashing 1s infinite linear alternate; animation-delay: 0.5s;
 }
 .dot-flashing::before, .dot-flashing::after {
   content: ''; display: inline-block; position: absolute; top: 0;
-  width: 4px; height: 4px; border-radius: 2px; background-color: #42e3a4; color: #42e3a4;
+  width: 4px; height: 4px; border-radius: 2px; background-color: #00f7ff; color: #00f7ff;
   animation: dot-flashing 1s infinite alternate;
 }
 .dot-flashing::before { left: -8px; animation-delay: 0s; }
 .dot-flashing::after { left: 8px; animation-delay: 1s; }
 
 @keyframes dot-flashing {
-  0% { background-color: #42e3a4; }
-  50%, 100% { background-color: rgba(66, 227, 164, 0.2); }
+  0% { background-color: #00f7ff; }
+  50%, 100% { background-color: rgba(0, 247, 255, 0.2); }
 }
 
 /* 移动端适配 */
