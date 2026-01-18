@@ -11,7 +11,6 @@
           </div>
           <div class="title-text-group">
             <span class="title-main">农智大脑 · 价格预测引擎</span>
-            <span class="title-sub">基于 LSTM-V3 深度学习模型 / 实时推演</span>
           </div>
         </div>
         <button class="close-btn" @click="close">
@@ -66,9 +65,6 @@
                 <span class="unit">/斤</span>
               </div>
               <div class="trend-row">
-                <div class="trend-badge" :class="trendClass">
-                  <span class="trend-arrow">{{ trendIcon }}</span> {{ trendText }}
-                </div>
                 <span class="diff-text" :class="diffClass">{{ priceDiff }}</span>
               </div>
             </div>
