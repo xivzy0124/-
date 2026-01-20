@@ -162,7 +162,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { mapLocation, mapProduct, pricePredictionCache } from '../../stores/store.js'
+import { mapLocation, mapProduct, pricePredictionCache, getHardcodedData } from '../../stores/store.js'
 
 const mapLocationStore = mapLocation()
 const mapProductStore = mapProduct()
@@ -320,6 +320,13 @@ const generatePredictionData = () => {
   
   if (cachedData) {
     predictionData.value = cachedData
+    return
+  }
+  
+  const hardcodedResult = getHardcodedData(province, city, district, product)
+  if (hardcodedResult) {
+    predictionData.value = hardcodedResult
+    cacheStore.setCache(province, city, district, product, hardcodedResult)
     return
   }
   

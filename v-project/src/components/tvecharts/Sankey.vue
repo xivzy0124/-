@@ -58,7 +58,6 @@ const henanData = [
 
   // --- 特色叶菜 ---
   { oneLevel: '河南中心', twoLevel: '叶菜类', varietyname: '淮阳黄花菜', totalExportVolume: 2600 },
-  { oneLevel: '河南中心', twoLevel: '叶菜类', varietyname: '信阳毛尖(茶食)', totalExportVolume: 800 }, 
 ];
 
 // 四川：天府之国，调味、喜湿作物与高山蔬菜

@@ -2,8 +2,8 @@ import axios from "axios";
 
 const service = axios.create({
   //后端地址
-  baseURL: 'http://192.168.201.251:8080/',
-  // baseURL: 'http://127.0.0.1:8080/',
+  // baseURL: 'http://192.168.201.251:8080/',
+  baseURL: 'http://123.60.173.63:7999/',
   timeout: 15000,
 });
 

@@ -1,6 +1,122 @@
 import { defineStore } from 'pinia'
 import provinceCapitalMap from '../assets/json/provinceCapitalMap.json'
 
+const generateDates = (days) => {
+  const dates = []
+  const today = new Date()
+  for (let i = 1; i <= days; i++) {
+    const date = new Date(today)
+    date.setDate(date.getDate() + i)
+    dates.push(date.toISOString().split('T')[0].substring(5))
+  }
+  return dates
+}
+
+const generateTimeline = (basePrice, trend, days) => {
+  const timeline = []
+  const today = new Date()
+  let currentPrice = basePrice
+
+  for (let i = 1; i <= days; i++) {
+    const date = new Date(today)
+    date.setDate(date.getDate() + i)
+    const dateStr = date.toISOString().split('T')[0].substring(5)
+
+    let change = trend === '上升' ? (Math.random() * 0.4) - 0.1 : (Math.random() * 0.4) - 0.3
+    currentPrice = Math.max(0.5, currentPrice + change)
+
+    timeline.push({
+      date: dateStr,
+      price: currentPrice.toFixed(2),
+      height: Math.min(100, Math.max(20, (currentPrice / (basePrice * 1.5)) * 100))
+    })
+  }
+
+  return timeline
+}
+
+const hardcodedData = {
+  '河南省-郑州市--大白菜': {
+    province: '河南省',
+    city: '郑州市',
+    district: '中原区',
+    product: '大白菜',
+    basePrice: '2.35',
+    predictedPrice: '2.68',
+    trend: '上升',
+    trendClass: 'trend-up',
+    confidence: '87.5%',
+    details: [
+      { label: '市场供需', value: '供不应求', valueClass: '' },
+      { label: '季节因素', value: '旺季效应', valueClass: '' },
+      { label: '物流成本', value: '平稳', valueClass: '' },
+      { label: '操作建议', value: '建议囤货', valueClass: 'action-buy' }
+    ],
+    timeline: generateTimeline(2.35, '上升', 7),
+    factors: { weather: 78, inventory: 65, logistics: 45 },
+    sevenDayPrediction: [
+      { day: '01-20', price: '2.4', probability: 0.85 },
+      { day: '01-21', price: '2.5', probability: 0.82 },
+      { day: '01-22', price: '2.6', probability: 0.79 },
+      { day: '01-23', price: '2.5', probability: 0.83 },
+      { day: '01-24', price: '2.7', probability: 0.77 },
+      { day: '01-25', price: '2.6', probability: 0.81 },
+      { day: '01-26', price: '2.8', probability: 0.75 }
+    ],
+    thirtyDayTrend: generateTimeline(2.35, '上升', 30)
+  },
+  '四川省-成都市--黄瓜': {
+    province: '四川省',
+    city: '成都市',
+    district: '武侯区',
+    product: '黄瓜',
+    basePrice: '7.25',
+    predictedPrice: '6.82',
+    trend: '下降',
+    trendClass: 'trend-down',
+    confidence: '91.2%',
+    details: [
+      { label: '市场供需', value: '供应充足', valueClass: '' },
+      { label: '季节因素', value: '季节性回落', valueClass: '' },
+      { label: '物流成本', value: '平稳', valueClass: '' },
+      { label: '操作建议', value: '随用随采', valueClass: 'action-wait' }
+    ],
+    timeline: generateTimeline(7.25, '下降', 7),
+    factors: { weather: 62, inventory: 85, logistics: 35 },
+    sevenDayPrediction: [
+      { day: '01-20', price: '6.8', probability: 0.88 },
+      { day: '01-21', price: '7.0', probability: 0.86 },
+      { day: '01-22', price: '6.9', probability: 0.84 },
+      { day: '01-23', price: '7.0', probability: 0.82 },
+      { day: '01-24', price: '6.7', probability: 0.80 },
+      { day: '01-25', price: '6.6', probability: 0.78 },
+      { day: '01-26', price: '6.8', probability: 0.76 }
+    ],
+    thirtyDayTrend: generateTimeline(7.25, '下降', 30)
+  }
+}
+
+export const getHardcodedData = (province, city, district, product) => {
+  const key = `${province}-${city}-${district}-${product}`
+  const keyWithoutDistrict = `${province}-${city}--${product}`
+
+  if (hardcodedData[key]) {
+    return hardcodedData[key]
+  }
+
+  if (hardcodedData[keyWithoutDistrict]) {
+    return hardcodedData[keyWithoutDistrict]
+  }
+
+  return null
+}
+
+export const getAllHardcodedKeys = () => {
+  return Object.keys(hardcodedData)
+}
+
+export { hardcodedData }
+
 // ==========================================
 // 1. 地理位置 Store (管理地图联动)
 // ==========================================

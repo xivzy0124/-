@@ -60,7 +60,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { getAllVaegettableTypes } from '../../api/requestFuntion.js'
-import { mapProduct, mapLocation, pricePredictionCache } from '../../stores/store.js'
+import { mapProduct, mapLocation, pricePredictionCache, getHardcodedData } from '../../stores/store.js'
 
 const emit = defineEmits(['product-change'])
 
@@ -85,12 +85,14 @@ const generatePredictionData = (productName, cityName) => {
   
   const cachedData = cacheStore ? cacheStore.getCache(province, city, district, productName) : null
   
-  if (cachedData && cachedData.timeline) {
-    return cachedData.timeline.map(item => ({
-      day: item.date,
-      price: item.price,
-      probability: 0.85 + Math.random() * 0.1
-    }))
+  if (cachedData && cachedData.sevenDayPrediction) {
+    return cachedData.sevenDayPrediction
+  }
+  
+  const hardcodedResult = getHardcodedData(province, city, district, productName)
+  if (hardcodedResult && hardcodedResult.sevenDayPrediction) {
+    cacheStore.setCache(province, city, district, productName, hardcodedResult)
+    return hardcodedResult.sevenDayPrediction
   }
   
   let basePrice = 0

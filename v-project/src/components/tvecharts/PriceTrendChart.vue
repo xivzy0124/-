@@ -23,7 +23,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
-import { mapProduct, mapLocation, pricePredictionCache } from '../../stores/store.js'
+import { mapProduct, mapLocation, pricePredictionCache, getHardcodedData } from '../../stores/store.js'
 
 const mapProductStore = mapProduct()
 const mapLocationStore = mapLocation()
@@ -146,47 +146,57 @@ const fetchData = async () => {
       const prices = []
       const today = new Date()
       
-      if (cachedData && cachedData.timeline) {
-        for (let i = 0; i < 30; i++) {
-          const d = new Date(today)
-          d.setDate(d.getDate() + i + 1)
-          dates.push(d.toISOString().split('T')[0])
-          
-          if (i < 7 && cachedData.timeline[i]) {
-            prices.push(parseFloat(cachedData.timeline[i].price))
-          } else {
-            let basePrice = parseFloat(cachedData.timeline[6]?.price || 2.8)
-            const change = (Math.random() - 0.5) * 0.3
-            basePrice += change
-            prices.push(Number(Math.max(0.5, basePrice).toFixed(2)))
+      if (cachedData && cachedData.sevenDayPrediction) {
+          for (let i = 0; i < 7; i++) {
+            const d = new Date(today)
+            d.setDate(d.getDate() + i + 1)
+            dates.push(d.toISOString().split('T')[0])
+            
+            if (cachedData.sevenDayPrediction[i]) {
+              prices.push(parseFloat(cachedData.sevenDayPrediction[i].price))
+            }
           }
-        }
-      } 
-      else {
-        let minPrice, maxPrice, startPrice;
-
-        if (productName.includes('白菜')) {
-          minPrice = 2.0; maxPrice = 3.5; startPrice = 2.8;
-        } else if (productName.includes('黄瓜')) {
-          minPrice = 6.0; maxPrice = 8.0; startPrice = 7.2;
         } else {
-          minPrice = 3.0; maxPrice = 6.0; startPrice = 4.5;
-        }
+          const hardcodedResult = getHardcodedData(province, city, district, productName)
+          if (hardcodedResult) {
+            if (hardcodedResult.sevenDayPrediction) {
+              for (let i = 0; i < 7; i++) {
+                const d = new Date(today)
+                d.setDate(d.getDate() + i + 1)
+                dates.push(d.toISOString().split('T')[0])
+                
+                if (hardcodedResult.sevenDayPrediction[i]) {
+                  prices.push(parseFloat(hardcodedResult.sevenDayPrediction[i].price))
+                }
+              }
+            }
+            cacheStore.setCache(province, city, district, productName, hardcodedResult)
+          } else {
+          let minPrice, maxPrice, startPrice;
 
-        let currentPrice = startPrice;
+          if (productName.includes('白菜')) {
+            minPrice = 2.0; maxPrice = 3.5; startPrice = 2.8;
+          } else if (productName.includes('黄瓜')) {
+            minPrice = 6.0; maxPrice = 8.0; startPrice = 7.2;
+          } else {
+            minPrice = 3.0; maxPrice = 6.0; startPrice = 4.5;
+          }
 
-        for (let i = 0; i < 30; i++) {
-          const d = new Date(today)
-          d.setDate(d.getDate() + i + 1) 
-          dates.push(d.toISOString().split('T')[0])
+          let currentPrice = startPrice;
 
-          const change = (Math.random() - 0.5) * 0.6; 
-          currentPrice += change;
+          for (let i = 0; i < 30; i++) {
+            const d = new Date(today)
+            d.setDate(d.getDate() + i + 1) 
+            dates.push(d.toISOString().split('T')[0])
 
-          if (currentPrice < minPrice) currentPrice = minPrice + Math.random() * 0.2;
-          if (currentPrice > maxPrice) currentPrice = maxPrice - Math.random() * 0.2;
+            const change = (Math.random() - 0.5) * 0.6; 
+            currentPrice += change;
 
-          prices.push(Number(currentPrice.toFixed(2)))
+            if (currentPrice < minPrice) currentPrice = minPrice + Math.random() * 0.2;
+            if (currentPrice > maxPrice) currentPrice = maxPrice - Math.random() * 0.2;
+
+            prices.push(Number(currentPrice.toFixed(2)))
+          }
         }
       }
 
