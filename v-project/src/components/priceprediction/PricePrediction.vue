@@ -9,7 +9,7 @@
             <span class="title-icon">🧠</span>
           </div>
           <div class="title-text-group">
-            <span class="title-main">农智大脑 · 价格预测引擎</span>
+            <span class="title-main">价溯云图 · 价格预测引擎</span>
             <span class="title-sub">AI PRICE PREDICTION ENGINE</span>
           </div>
         </div>
@@ -95,7 +95,7 @@
                   <span class="f-icon">📦</span>
                   <div class="f-content">
                     <div class="f-row">
-                      <span class="f-name">库存周转</span>
+                      <span class="f-name">历史价格</span>
                       <span class="f-val">{{ factors.inventory }}%</span>
                     </div>
                     <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.inventory + '%', background: '#3ba1ff'}"></div></div>
@@ -105,7 +105,7 @@
                   <span class="f-icon">🚚</span>
                   <div class="f-content">
                     <div class="f-row">
-                      <span class="f-name">物流成本</span>
+                      <span class="f-name">蔬菜特性</span>
                       <span class="f-val">{{ factors.logistics }}%</span>
                     </div>
                     <div class="f-bar-bg"><div class="f-bar" :style="{width: factors.logistics + '%', background: '#b766ff'}"></div></div>

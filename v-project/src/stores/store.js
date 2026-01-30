@@ -55,13 +55,13 @@ const hardcodedData = {
     timeline: generateTimeline(2.35, '上升', 7),
     factors: { weather: 78, inventory: 65, logistics: 45 },
     sevenDayPrediction: [
-      { day: '01-20', price: '2.4', probability: 0.85 },
-      { day: '01-21', price: '2.5', probability: 0.82 },
-      { day: '01-22', price: '2.6', probability: 0.79 },
-      { day: '01-23', price: '2.5', probability: 0.83 },
-      { day: '01-24', price: '2.7', probability: 0.77 },
-      { day: '01-25', price: '2.6', probability: 0.81 },
-      { day: '01-26', price: '2.8', probability: 0.75 }
+      { day: '01-21', price: '2.4', probability: 0.85 },
+      { day: '01-22', price: '2.5', probability: 0.82 },
+      { day: '01-23', price: '2.6', probability: 0.79 },
+      { day: '01-24', price: '2.5', probability: 0.83 },
+      { day: '01-25', price: '2.7', probability: 0.77 },
+      { day: '01-26', price: '2.6', probability: 0.81 },
+      { day: '01-27', price: '2.8', probability: 0.75 }
     ],
     thirtyDayTrend: generateTimeline(2.35, '上升', 30)
   },
@@ -84,13 +84,13 @@ const hardcodedData = {
     timeline: generateTimeline(7.25, '下降', 7),
     factors: { weather: 62, inventory: 85, logistics: 35 },
     sevenDayPrediction: [
-      { day: '01-20', price: '6.8', probability: 0.88 },
-      { day: '01-21', price: '7.0', probability: 0.86 },
-      { day: '01-22', price: '6.9', probability: 0.84 },
-      { day: '01-23', price: '7.0', probability: 0.82 },
-      { day: '01-24', price: '6.7', probability: 0.80 },
-      { day: '01-25', price: '6.6', probability: 0.78 },
-      { day: '01-26', price: '6.8', probability: 0.76 }
+      { day: '01-21', price: '6.8', probability: 0.88 },
+      { day: '01-22', price: '7.0', probability: 0.86 },
+      { day: '01-23', price: '6.9', probability: 0.84 },
+      { day: '01-24', price: '7.0', probability: 0.82 },
+      { day: '01-25', price: '6.7', probability: 0.80 },
+      { day: '01-26', price: '6.6', probability: 0.78 },
+      { day: '01-27', price: '6.8', probability: 0.76 }
     ],
     thirtyDayTrend: generateTimeline(7.25, '下降', 30)
   }
